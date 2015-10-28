@@ -1,0 +1,6 @@
+*.swp
+model
+build
+spec.pdf
+lib
+server/lib
