@@ -3,12 +3,12 @@
 
 #include <string>
 #include <thread>
-#include <mutex>
-#include <cstring>
 #include <iostream>
-#include <vector>
+#include <cstring>
+#include <ctime>
+#include <cstdlib>
 #include "connection.hpp"
-#include "model.pb.h"
+#include "main.model.pb.h"
 #include "guess_num.hpp"
 
 class GameSystem {
@@ -16,13 +16,7 @@ class GameSystem {
     const int initial_money;
 
     Connection connection;
-    GuessNum* guess_num;
-
-    std::mutex mutex;
-    std::vector<Model::User*> user_list;
-    /* Will return the smallest available index */
-    std::priority_queue<int, std::vector<int>, std::greater<int> > available_index;
-    
+    GuessNumServer* guess_num;
 
 public:
     void start();
@@ -30,9 +24,12 @@ public:
     GameSystem(Connection&& conn, std::map<std::string,std::string>&& config);
 
 private:
-    void response_sucess( Model::System_Reply& res, Model::Reply& response );
-    void handle_req(Model::Request&& req );
-    bool addUser();
+    void set_response( System::User& user, Model::Reply& response );
+    void response_sucess( System::Reply& res, Model::Reply& response );
+    bool handle_req( System::User& user, const System::Request& req, Model::Reply& response );
+    bool join_game( System::User& user, System::Request_Type game_type, Model::Reply& response );
+    bool add_user( Model::Reply& response );
+    int generate_new_id();
 };
 
 #endif

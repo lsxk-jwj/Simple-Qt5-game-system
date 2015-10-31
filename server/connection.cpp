@@ -36,7 +36,7 @@ int Connection::accept() const{
 
 }
 
-static bool send_message(int socket, const google::protobuf::MessageLite& message)
+bool Connection::send_message(int socket, const google::protobuf::MessageLite& message)
 {
     google::protobuf::uint32 message_length = message.ByteSize();
     int prefix_length = sizeof(message_length);
@@ -51,15 +51,17 @@ static bool send_message(int socket, const google::protobuf::MessageLite& messag
     coded_output.WriteLittleEndian32(message_length);
     message.SerializeToCodedStream(&coded_output);
 
-    int sent_bytes = write(socket, buffer, buffer_length);
-    if (sent_bytes != buffer_length) {
-        return false;
+    int sent_bytes = 0;
+    for (int i=0; i < buffer_length; i += sent_bytes) {      
+        sent_bytes = write(socket, buffer + i, buffer_length - i);
+        if (sent_bytes < 0) /* write error */
+            return false;
     }
 
     return true;
 }
 
-static bool receive_message(int socket, google::protobuf::MessageLite& message)
+bool Connection::receive_message(int socket, google::protobuf::MessageLite& message)
 {
     google::protobuf::uint32 message_length;
     int prefix_length = sizeof(message_length);
@@ -94,8 +96,18 @@ static bool receive_message(int socket, google::protobuf::MessageLite& message)
     return true;
 }
 
-static bool send_error( std::string&& error_mesg ){
+bool Connection::send_error( std::string&& error_mesg ){
    /* TODO */ 
 }
 
+void Connection::set_timeout( int req_socket ){
+
+    struct timeval timeout;      
+    timeout.tv_sec = socket_time_out;
+    timeout.tv_usec = 0;
+
+    if (::setsockopt (req_socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0 ||
+        ::setsockopt (req_socket, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(timeout)) < 0)
+        std::cerr < "(setsockopt): Fail setting timeout\n"; 
+}
 

@@ -19,6 +19,7 @@
 
 struct Connection {
     
+    static const int socket_time_out = 10;
     static const int buffer_size = 1000;
     int socket;
     char* buffer;
@@ -31,6 +32,7 @@ public:
     static bool send_message(int socket, const google::protobuf::MessageLite& message);
     static bool receive_message(int socket, google::protobuf::MessageLite& message);
     static bool send_error( std::string&& error_mesg );
+    static void set_timeout( int req_socket );
 };
 
-#endif
+#endif 

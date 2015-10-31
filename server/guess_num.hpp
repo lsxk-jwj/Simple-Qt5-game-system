@@ -1,24 +1,16 @@
 #ifndef GUESS_NUMBER_HEADER
 #define GUESS_NUMBER_HEADER 
 
-#include "model.pb.h"
+#include <iostream>
+#include "game_structure.hpp"
+#include "main.model.pb.h"
 
-class GuessNum {
-
-    int playerNum;
-    int roomNum;
+class GuessNumServer: public GameStructure {
 
 public:
-    GuessNum( int _roomNum ,int _playerNum ):roomNum(_roomNum), playerNum(_playerNum){
-        if( playerNum <= 0 || roomNum <= 0 ){
-            std::cerr << "Impossible room number: " << roomNum << " or impossible player number: " << playerNum << std::endl;
-            exit(0);
-        }
-    }
+    GuessNumServer( int roomNum ,int playerNum ):GameStructure(roomNum, playerNum){}
 
-    void handle_req( Model::Request&& req );
-
-    void available();
+    bool handle_req( System::User& user, const GuessNum::Request& req, Model::Reply& res );
 
 };
 
