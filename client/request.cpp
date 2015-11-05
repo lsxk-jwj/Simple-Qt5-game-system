@@ -2,7 +2,7 @@
 
 void Request::setUp(int _socket){
     socket = _socket;
-    processor.setMaxThreadCount(1);
+    processor.setMaxThreadCount(10);
 }
 
 void Request::registerRequest( Model::Request* req, CallBack callback ){
