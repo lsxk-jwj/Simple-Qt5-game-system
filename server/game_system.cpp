@@ -1,37 +1,60 @@
 #include "game_system.hpp"
 
-GameSystem::GameSystem(Connection&& conn, std::map<std::string,std::string>&& config): 
-    connection(conn), 
-    initial_money( std::stoi(config["CONFIG::initial_money"]) ) {
+Connection connection;
+GuessNumServer* guess_num;
 
-    guess_num = new GuessNumServer( std::stoi(config["GUESSNUM::room_number"]), std::stoi(config["GUESSNUM::play_number"]) );
-    if( initial_money <= 0 ){
-        std::cerr << "Possible Corruption: InitialMoney set to " << initial_money << std::endl;
-    }
-
+void initialize_game(Connection&& conn){
+    connection = conn; 
+    guess_num = new GuessNumServer(CONFIG::ROOM_NUMBER, CONFIG::PLAYER_NUMBER);
 }
-void GameSystem::start(){
+
+void start_game(){
+
     while(1){
         int req = connection.accept();        
-        std::thread( &GameSystem::process, this, req );
-        ::close(req);
+        std::cerr << "New connection: fd = " << req << std::endl;
+
+        if( req < 0 )
+            std::cerr << "Fail accepting incomming connection\n";
+        else{
+            std::thread spawn( process, req );
+            spawn.detach();
+        }
     }
 }
 
-void GameSystem::process(int req_socket){
+static void process(int req_socket){
 
     Connection::set_timeout(req_socket);
 
     System::User user;
 
-    while(1){
+    int timeout_count = 0;
+
+    bool keep_running = true;
+
+    while(keep_running){
 
         Model::Request request;
         if( !Connection::receive_message(req_socket, request) ){
-            /* TODO */
             /* Handle Timeout */
-            Connection::send_error("Fail reading request from socket " + std::to_string(req_socket));
-            return;
+            std::cerr << "Error or timeout\n"; 
+
+            ++timeout_count;
+            if( user.has_room_id() /* If the user is in some game */){ 
+                if( timeout_count > BUSY_TIMEOUT_LIMIT ){
+                    /* purge game  */
+                    // return;
+                }
+            }
+            else if( timeout_count > IDE_TIMEOUT_LIMIT ){ 
+                // return;
+            }
+        }
+        else{
+
+            std::cerr << "Getting a new request\n";
+            timeout_count = 0;
         }
         
         bool ok = false;
@@ -45,47 +68,97 @@ void GameSystem::process(int req_socket){
         }
         else if( request.has_system() ){
             const System::Request& req = request.system();
-            if( req.has_join() ){
-                ok = this->join_game( user, req.join().game_type(), response );
-            }
-            else if( req.has_new_user() ){
-                ok = this->add_user( response );
-                user = response.system().user();
+
+            if( req.operation() == System::Request_Operation_KeepAlive )
+                continue;
+
+            switch( req.operation() ){
+                case System::Request_Operation_Update:
+                    ok = update_player_list( user.room_id(), req.game_type() );
+                    break;
+                case System::Request_Operation_CheckReady:
+                    ok = check_ready( user, req.game_type() );
+                    break;
+                case System::Request_Operation_JoinGame:
+                    ok = join_game( user, req.game_type(), response );
+                    break;
+                case System::Request_Operation_NewUser:
+                    ok = add_user( response );
+                    user = response.system().user();
+                    break;
+                case System::Request_Operation_QuitRoom:
+                    // TODO
+                    break;
+                case System::Request_Operation_QuitGame:
+                    ok = true;
+                    keep_running = false;
+                    break;
             }
         }
 
         if( !ok )
-            response.set_status(false); 
-        else
             response.set_status(true);
+        else
+            response.set_status(false); 
 
         if( !Connection::send_message(req_socket, response) ){
             /* TODO */
             /* Handle Timeout */
         }
     }
+
+    /* Do some cleanup here */
+
+    std::cerr << "Connection fd = " << req_socket << " closed\n";
+
+    ::close( req_socket );
+
 }
 
-bool GameSystem::join_game( System::User& user , System::Request_Type game_type, Model::Reply& response ){
+static bool update_player_list( int room_id, System::Type game_type ){
+
+    System::PlayerList players;
+
     switch( game_type ){
-        case System::Request_Type_GUESSNUM:
-            guess_num->add_user( user, response );
-            set_response( user, response );
+        case System::GUESSNUM:
+            return guess_num->get_players( room_id, players );
             break;
-        case System::Request_Type_JACK:
+        case System::JACK:
+            // return guess_num->get_players( room_id, players );
             break;
     }
 }
-bool GameSystem::add_user( Model::Reply& response ){
+static bool check_ready( System::User& user, System::Type game_type ){
+    switch( game_type ){
+        case System::GUESSNUM:
+            return guess_num->check_game_ready( user.room_id() );
+            break;
+        case System::JACK:
+            // return guess_num->check_game_ready( user );
+            break;
+    }
+}
+static bool join_game( System::User& user , System::Type game_type, Model::Reply& response ){
+    switch( game_type ){
+        case System::GUESSNUM:
+            guess_num->add_player( user );
+            break;
+        case System::JACK:
+            break;
+    }
+
+    set_response( user, response );
+}
+static bool add_user( Model::Reply& response ){
     
     auto user = System::User();
-    user.set_money( initial_money );
+    user.set_money( CONFIG::INITIAL_MONEY );
     user.set_id( generate_new_id() );
     set_response( user, response );
     return true;
 }
 
-void GameSystem::set_response( System::User& user, Model::Reply& response ){
+static void set_response( System::User& user, Model::Reply& response ){
 
     System::Reply* sys = response.mutable_system();
     System::Reply res;
@@ -94,7 +167,7 @@ void GameSystem::set_response( System::User& user, Model::Reply& response ){
     *_user = user;
     *sys = res;
 }
-int GameSystem::generate_new_id(){
+static int generate_new_id(){
     std::srand(std::time(0)); // use current time as seed for random generator
     return std::rand();
 }

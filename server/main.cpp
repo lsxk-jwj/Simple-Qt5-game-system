@@ -2,6 +2,7 @@
 #include <fstream>
 #include <cstdio>
 #include <map>
+#include "config.hpp"
 #include "connection.hpp"
 #include "game_system.hpp"
 
@@ -9,16 +10,21 @@ void parse_config_file( std::map<std::string,std::string>& config, char* filenam
     
     std::ifstream config_file(filename);
     std::string line;
-    char key[30],value[30];
+    char key[30];
+    int value;
 
     if( config_file.is_open() ){
         while( std::getline( config_file, line ) ){
-            if( sscanf( line.c_str(), "%s = %s", key, value ) < 2 ){
+            if( sscanf( line.c_str(), "%s = %d", key, &value ) < 2 ){
                 std::cout << "Config file wrong format!  Should be `[key] = [value]`" << std::endl;
                 exit(0);
             }
-            if( key && value )
-                config[ key ] = std::string(value);
+            else{
+                std::cout << "Config: " << key << " = " << value << std::endl;
+                if( key && value )
+                    config[ key ] = value;
+            }
+
         }
     }
     else {
@@ -29,20 +35,23 @@ void parse_config_file( std::map<std::string,std::string>& config, char* filenam
 }
 int main(int argc, char *argv[])
 {
-    if( argc < 2 ){
-        std::cout << "Usage: " << argv[0] << " [configuartion file] " << std::endl; 
-        exit(1);
-    }
 
-    std::map<std::string,std::string> config;
+    // if( argc < 2 ){
+        // std::cout << "Usage: " << argv[0] << " [configuartion file] " << std::endl; 
+        // exit(1);
+    // }
 
-    parse_config_file( config, argv[1] );
+    // std::map<std::string,int> config;
 
-    Connection connection( std::stoi(config["CONFIG::server_port"]) );
+    // parse_config_file( config, argv[1] );
 
-    GameSystem game_system( std::move(connection), std::move(config));
+    Connection connection;
 
-    game_system.start();
+    connection.useAsServer(CONFIG::SERVER_PORT);
+
+    initialize_game( std::move(connection) );
+
+    start_game();
 
     return 0;
 }

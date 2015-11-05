@@ -8,28 +8,24 @@
 #include <ctime>
 #include <cstdlib>
 #include "connection.hpp"
-#include "main.model.pb.h"
+#include "config.hpp"
 #include "guess_num.hpp"
+#include "main.model.pb.h"
 
-class GameSystem {
+#define BUSY_TIMEOUT_LIMIT 2
+#define IDE_TIMEOUT_LIMIT 10
 
-    const int initial_money;
+void start_game();
+void initialize_game(Connection&& conn);
 
-    Connection connection;
-    GuessNumServer* guess_num;
-
-public:
-    void start();
-    void process(int req_socket);
-    GameSystem(Connection&& conn, std::map<std::string,std::string>&& config);
-
-private:
-    void set_response( System::User& user, Model::Reply& response );
-    void response_sucess( System::Reply& res, Model::Reply& response );
-    bool handle_req( System::User& user, const System::Request& req, Model::Reply& response );
-    bool join_game( System::User& user, System::Request_Type game_type, Model::Reply& response );
-    bool add_user( Model::Reply& response );
-    int generate_new_id();
-};
+static void process(int req_socket);
+static void set_response( System::User& user, Model::Reply& response );
+static void response_sucess( System::Reply& res, Model::Reply& response );
+static bool handle_req( System::User& user, const System::Request& req, Model::Reply& response );
+static bool join_game( System::User& user, System::Type game_type, Model::Reply& response );
+static bool add_user( Model::Reply& response );
+static bool check_ready( System::User& user, System::Type game_type );
+static bool update_player_list( int room_id, System::Type game_type );
+static int generate_new_id();
 
 #endif

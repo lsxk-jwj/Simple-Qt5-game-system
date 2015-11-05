@@ -30,9 +30,13 @@ public:
         }
     }
 
-    bool add_user( System::User& user, Model::Reply& response );
+    bool add_player( System::User& user );
 
     bool has_no_room();
+
+    bool check_game_ready( int room_id );
+
+    bool get_players( int room_id, System::PlayerList& players );
 private:
     int generate_room_id();
 

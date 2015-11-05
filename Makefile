@@ -1,59 +1,67 @@
 
-CXX=clang++
-LINKER := clang++
-INCDIRS := -I. -I./lib/protobuf-2.6.1/src 
-LIBDIRS := -L lib/protobuf-2.6.1/src/.libs -L lib/libdontdie 
-LIBS := -l protobuf #-l libdontdie
-LIBDIRS += $(LIBS)
-CXXFLAGS := -std=c++11 -pthread #-Wall -Wextra 
+PWD := $(shell pwd)
+CXX := g++
+LINKER := g++
+INCDIRS := -I. -I$(PWD)/lib -I$(PWD)/lib/protobuf-2.6.1/src 
+LIBDIRS := $(PWD)/lib/protobuf-2.6.1/src/.libs 
+LIBS := -l protobuf 
+CXXFLAGS := -std=c++11 -pthread -g #-Wall -Wextra 
 BUILD_DIR=build
+BIN := $(BUILD_DIR)/bin
 
 PROTO := $(shell bash -c "pwd")/lib/protobuf-2.6.1/src/protoc
 MODEL_DIR := model
 MODEL_BUILD_DIR := build
-MODEL_BIN := $(BUILD_DIR)/bin
+BIN := $(BUILD_DIR)/bin
 MODELS := $(shell bash -c "cd $(MODEL_DIR) && ls *.proto")
+MODELS_SRCFILES := $(patsubst %.proto, %.pb.cc, $(MODELS))
+MODELS_OBJFILES := $(addprefix $(MODEL_DIR)/$(MODEL_BUILD_DIR)/, $(patsubst %.cc,%.o,$(MODELS_SRCFILES)))
 INCDIRS += -I$(MODEL_DIR)/$(MODEL_BUILD_DIR)
 
 SERVER_DIR := server
-SERVER_BIN := $(BUILD_DIR)/bin
 SERVER_SRCFILES := $(wildcard $(SERVER_DIR)/*.cpp) 
-SERVER_OBJFILES := $(addprefix $(SERVER_BIN)/, $(patsubst %.cpp,%.o,$(SERVER_SRCFILES)))
-SERVER_BUILD := $(SERVER_DIR)/server
+SERVER_OBJFILES := $(addprefix $(BIN)/, $(patsubst %.cpp,%.o,$(SERVER_SRCFILES)))
+SERVER_BUILD := $(BUILD_DIR)/server
 
-KEEP_ALIVE_ENV := DD_TCP_KEEPALIVE_TIME=4 DD_TCP_KEEPALIVE_INTVL=5 DD_TCP_KEEPALIVE_PROBES=6 
+CLIENT_DIR := client
+QMAKE := qmake
 
-.PHONY: init_dir clean
+LIB_DIR := lib
+LIB_SRCFILES := $(wildcard $(LIB_DIR)/*.cpp) 
+LIB_OBJFILES := $(addprefix $(BIN)/, $(patsubst %.cpp,%.o,$(LIB_SRCFILES)))
 
-all: init_dir keep_alive proto $(SERVER_BUILD) 
+.PHONY: init_dir clean client model 
 
+all: init_dir model $(SERVER_BUILD) 
+
+run:
+	@export LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(LIBDIRS) && ./build/server
+
+run_client: client
+	@export LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(LIBDIRS) && ./build/client
 
 init_dir: 
-	@mkdir -p $(SERVER_BIN)/$(SERVER_DIR) $(SERVER_BIN)/$(MODEL_DIR) $(MODEL_DIR)/$(MODEL_BUILD_DIR)
+	@mkdir -p $(BIN)/$(SERVER_DIR) $(BIN)/$(MODEL_DIR) $(MODEL_DIR)/$(MODEL_BUILD_DIR) $(BIN)/$(LIB_DIR) 
 
-proto: $(addprefix, $(MODEL_DIR)/, $(MODELS))
-	@echo $^
-	@cd $(MODEL_DIR) && echo compiling protocal buffer files: $(MODELS) && \
-	for model in $(MODELS); do $(PROTO) -I=. --cpp_out=./$(MODEL_BUILD_DIR) $$model; done 
-	
-keep_alive: 
-	export $(KEEP_ALIVE_ENV)
+model: $(addprefix, $(MODEL_DIR)/, $(MODELS))
+	@cd $(MODEL_DIR) && \
+	for model in $(MODELS); do echo proto compiling $$model; \
+	$(PROTO) -I=. --cpp_out=./$(MODEL_BUILD_DIR) $$model; done  && \
+	cd $(MODEL_BUILD_DIR) && \
+	for modelcc in $(MODELS_SRCFILES); do echo compiling $$modelcc; $(CXX) $(CXXFLAGS) $(INCDIRS) -c $$modelcc ; done
 
-$(SERVER_BUILD): $(SERVER_OBJFILES)  $(addprefix $(MODEL_BIN)/$(MODEL_DIR)/, $(patsubst %.cc,%.o,$(shell bash -c 'cd $(MODEL_DIR)/$(MODEL_BUILD_DIR) && ls *.cc')))
-	@echo linking $^
-	$(LINKER) $^ $(LIBDIRS) -o $@
+$(SERVER_BUILD): $(LIB_OBJFILES) $(MODELS_OBJFILES) $(SERVER_OBJFILES) 
+	$(LINKER) $^ -L $(LIBDIRS) $(LIBS) -o $@
 
-$(MODEL_DIR)/$(MODEL_BUILD_DIR)/%.cc: $(MODEL_DIR)/%.proto
-	@echo compiling $<
-	$(PROTO) -I=. --cpp_out=$(MODEL_DIR)/$(MODEL_BUILD_DIR) $< 
 
-$(MODEL_BIN)/$(MODEL_DIR)/%.o: $(MODEL_DIR)/$(MODEL_BUILD_DIR)/%.cc
-	@echo compiling $<
+$(BIN)/$(SERVER_DIR)/%.o: $(SERVER_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) $(INCDIRS) -c $< -o $@
 
-$(SERVER_BIN)/$(SERVER_DIR)/%.o: $(SERVER_DIR)/%.cpp
-	@echo compiling $<
+$(BIN)/$(LIB_DIR)/%.o: $(LIB_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) $(INCDIRS) -c $< -o $@
+
+client:
+	@cd $(CLIENT_DIR) && $(QMAKE) && $(MAKE) 
 
 clean:
-	rm -rf $(BUILD_DIR) $(MODEL_DIR)/$(MODEL_BUILD_DIR)
+	rm -rf $(BUILD_DIR) $(MODEL_DIR)/$(MODEL_BUILD_DIR)/*
