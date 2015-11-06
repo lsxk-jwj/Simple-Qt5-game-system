@@ -1,6 +1,10 @@
 #include "mainwindow.h"
+#include "request.h"
 #include <QApplication>
 #include <QDebug>
+
+
+Request request;
 
 int main(int argc, char *argv[])
 {

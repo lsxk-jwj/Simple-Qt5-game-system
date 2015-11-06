@@ -14,7 +14,6 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QButtonGroup>
 #include <QtWidgets/QFrame>
-#include <QtWidgets/QGroupBox>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QHeaderView>
 #include <QtWidgets/QLabel>
@@ -41,7 +40,8 @@ public:
     QLabel *label_11;
     QLabel *round;
     QFrame *line;
-    QGroupBox *rivals_list;
+    QLabel *label_7;
+    QLabel *RivalName;
 
     void setupUi(QWidget *GuessNumClient)
     {
@@ -117,10 +117,23 @@ public:
         line->setGeometry(QRect(0, 560, 821, 20));
         line->setFrameShape(QFrame::HLine);
         line->setFrameShadow(QFrame::Sunken);
-        rivals_list = new QGroupBox(GuessNumClient);
-        rivals_list->setObjectName(QStringLiteral("rivals_list"));
-        rivals_list->setGeometry(QRect(30, 590, 751, 151));
-        rivals_list->setFont(font1);
+        label_7 = new QLabel(GuessNumClient);
+        label_7->setObjectName(QStringLiteral("label_7"));
+        label_7->setGeometry(QRect(40, 580, 281, 71));
+        QFont font3;
+        font3.setPointSize(25);
+        label_7->setFont(font3);
+        label_7->setAlignment(Qt::AlignCenter);
+        RivalName = new QLabel(GuessNumClient);
+        RivalName->setObjectName(QStringLiteral("RivalName"));
+        RivalName->setGeometry(QRect(270, 580, 281, 71));
+        QFont font4;
+        font4.setPointSize(25);
+        font4.setBold(true);
+        font4.setWeight(75);
+        RivalName->setFont(font4);
+        RivalName->setStyleSheet(QStringLiteral("color: rgb(170, 85, 0)"));
+        RivalName->setAlignment(Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter);
 
         retranslateUi(GuessNumClient);
 
@@ -136,7 +149,8 @@ public:
         result->setText(QApplication::translate("GuessNumClient", "None", 0));
         label_11->setText(QApplication::translate("GuessNumClient", "Round:", 0));
         round->setText(QApplication::translate("GuessNumClient", "0", 0));
-        rivals_list->setTitle(QApplication::translate("GuessNumClient", "Rivals:", 0));
+        label_7->setText(QApplication::translate("GuessNumClient", "Your rival:", 0));
+        RivalName->setText(QApplication::translate("GuessNumClient", "RivalName", 0));
     } // retranslateUi
 
 };

@@ -40,9 +40,16 @@ public:
     QLabel *money;
     QSpacerItem *verticalSpacer_6;
     QSpacerItem *verticalSpacer_5;
-    QSpacerItem *verticalSpacer_3;
-    QPushButton *BlackJackButton;
     QPushButton *GuessNumButton;
+    QHBoxLayout *horizontalLayout_6;
+    QLabel *label_6;
+    QLabel *GuessNumBet;
+    QSpacerItem *verticalSpacer_3;
+    QSpacerItem *verticalSpacer_7;
+    QPushButton *BlackJackButton;
+    QHBoxLayout *horizontalLayout_7;
+    QLabel *label_7;
+    QLabel *GuessNumBet_2;
     QSpacerItem *verticalSpacer;
     QSpacerItem *verticalSpacer_2;
     QVBoxLayout *verticalLayout_2;
@@ -61,12 +68,13 @@ public:
     {
         if (MainWindow->objectName().isEmpty())
             MainWindow->setObjectName(QStringLiteral("MainWindow"));
-        MainWindow->resize(553, 496);
+        MainWindow->resize(562, 554);
+        MainWindow->setMaximumSize(QSize(600, 800));
         centralWidget = new QWidget(MainWindow);
         centralWidget->setObjectName(QStringLiteral("centralWidget"));
         layoutWidget = new QWidget(centralWidget);
         layoutWidget->setObjectName(QStringLiteral("layoutWidget"));
-        layoutWidget->setGeometry(QRect(90, 60, 380, 410));
+        layoutWidget->setGeometry(QRect(90, 10, 380, 476));
         board = new QVBoxLayout(layoutWidget);
         board->setSpacing(6);
         board->setContentsMargins(11, 11, 11, 11);
@@ -139,22 +147,73 @@ public:
 
         board->addItem(verticalSpacer_5);
 
+        GuessNumButton = new QPushButton(layoutWidget);
+        GuessNumButton->setObjectName(QStringLiteral("GuessNumButton"));
+        GuessNumButton->setMinimumSize(QSize(0, 27));
+        QFont font4;
+        font4.setBold(true);
+        font4.setWeight(75);
+        GuessNumButton->setFont(font4);
+        GuessNumButton->setStyleSheet(QStringLiteral(""));
+
+        board->addWidget(GuessNumButton);
+
+        horizontalLayout_6 = new QHBoxLayout();
+        horizontalLayout_6->setSpacing(6);
+        horizontalLayout_6->setObjectName(QStringLiteral("horizontalLayout_6"));
+        label_6 = new QLabel(layoutWidget);
+        label_6->setObjectName(QStringLiteral("label_6"));
+        QFont font5;
+        font5.setPointSize(14);
+        font5.setBold(true);
+        font5.setWeight(75);
+        label_6->setFont(font5);
+
+        horizontalLayout_6->addWidget(label_6, 0, Qt::AlignRight);
+
+        GuessNumBet = new QLabel(layoutWidget);
+        GuessNumBet->setObjectName(QStringLiteral("GuessNumBet"));
+        GuessNumBet->setFont(font5);
+        GuessNumBet->setAlignment(Qt::AlignCenter);
+
+        horizontalLayout_6->addWidget(GuessNumBet, 0, Qt::AlignLeft);
+
+
+        board->addLayout(horizontalLayout_6);
+
         verticalSpacer_3 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
 
         board->addItem(verticalSpacer_3);
 
+        verticalSpacer_7 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+
+        board->addItem(verticalSpacer_7);
+
         BlackJackButton = new QPushButton(layoutWidget);
         BlackJackButton->setObjectName(QStringLiteral("BlackJackButton"));
         BlackJackButton->setMinimumSize(QSize(0, 27));
+        BlackJackButton->setFont(font4);
 
         board->addWidget(BlackJackButton);
 
-        GuessNumButton = new QPushButton(layoutWidget);
-        GuessNumButton->setObjectName(QStringLiteral("GuessNumButton"));
-        GuessNumButton->setMinimumSize(QSize(0, 27));
-        GuessNumButton->setStyleSheet(QStringLiteral(""));
+        horizontalLayout_7 = new QHBoxLayout();
+        horizontalLayout_7->setSpacing(6);
+        horizontalLayout_7->setObjectName(QStringLiteral("horizontalLayout_7"));
+        label_7 = new QLabel(layoutWidget);
+        label_7->setObjectName(QStringLiteral("label_7"));
+        label_7->setFont(font5);
 
-        board->addWidget(GuessNumButton);
+        horizontalLayout_7->addWidget(label_7, 0, Qt::AlignRight);
+
+        GuessNumBet_2 = new QLabel(layoutWidget);
+        GuessNumBet_2->setObjectName(QStringLiteral("GuessNumBet_2"));
+        GuessNumBet_2->setFont(font5);
+        GuessNumBet_2->setAlignment(Qt::AlignCenter);
+
+        horizontalLayout_7->addWidget(GuessNumBet_2, 0, Qt::AlignLeft);
+
+
+        board->addLayout(horizontalLayout_7);
 
         verticalSpacer = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
 
@@ -230,6 +289,8 @@ public:
         board->addWidget(ChangeNameButton);
 
         MainWindow->setCentralWidget(centralWidget);
+        layoutWidget->raise();
+        BlackJackButton->raise();
 
         retranslateUi(MainWindow);
 
@@ -243,8 +304,12 @@ public:
         name->setText(QApplication::translate("MainWindow", "Anomynous", 0));
         label_5->setText(QApplication::translate("MainWindow", "Money You Have:", 0));
         money->setText(QApplication::translate("MainWindow", "0", 0));
-        BlackJackButton->setText(QApplication::translate("MainWindow", "BlackJack", 0));
         GuessNumButton->setText(QApplication::translate("MainWindow", "Guess Number", 0));
+        label_6->setText(QApplication::translate("MainWindow", "Bet:", 0));
+        GuessNumBet->setText(QApplication::translate("MainWindow", "3000", 0));
+        BlackJackButton->setText(QApplication::translate("MainWindow", "BlackJack", 0));
+        label_7->setText(QApplication::translate("MainWindow", "Bet:", 0));
+        GuessNumBet_2->setText(QApplication::translate("MainWindow", "3000", 0));
         label->setText(QApplication::translate("MainWindow", "Server IP:   ", 0));
         serverIPDisplay->setText(QApplication::translate("MainWindow", "127.0.1.1", 0));
         label_3->setText(QApplication::translate("MainWindow", "Server port:   ", 0));

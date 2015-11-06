@@ -35,16 +35,19 @@ private slots:
     void tryConnect();
     void checkReady();
     void keepAlivePokeServer();
+
 signals:
     void connectionInvalid();
 
 private:
 
     void initializeWaitDialog();
+    void initializeUser(const System::User& user);
     void makeConnection();
-    void waitForRival();
+    void waitForRival(System::Type t);
     void joinGame(System::Type t);
     void startGame();
+    void initializeUser( System::User* user_info );
 
     System::User user;
     Ui::MainWindow *ui;
@@ -52,7 +55,6 @@ private:
     QTimer* keepAlive;
     Connection connection;
     QString serverIP;
-    Request request;
     int serverPort;
     int socket;
 

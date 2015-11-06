@@ -31,75 +31,88 @@ static void process(int req_socket){
 
     int timeout_count = 0;
 
+    int cnt = 0;
+
     bool keep_running = true;
 
     while(keep_running){
 
         Model::Request request;
         if( !Connection::receive_message(req_socket, request) ){
+
             /* Handle Timeout */
             std::cerr << "Error or timeout\n"; 
 
             ++timeout_count;
-            if( user.has_room_id() /* If the user is in some game */){ 
-                if( timeout_count > BUSY_TIMEOUT_LIMIT ){
-                    /* purge game  */
-                    // return;
+            if( timeout_count > TIMEOUT_LIMIT ){
+                if( user.has_room_id() /* If the user is in some game */){ 
+                        /* purge game  */
+                        // return;
                 }
-            }
-            else if( timeout_count > IDE_TIMEOUT_LIMIT ){ 
-                // return;
+                else{
+
+                }
             }
         }
         else{
 
-            std::cerr << "Getting a new request\n";
+            std::cerr << "Getting a new request: " << cnt++ << std::endl;
             timeout_count = 0;
         }
         
-        bool ok = false;
+        bool status = true;
         Model::Reply response;
 
         if( request.has_black_jack() ){
-            // ok = guess_num->handle_req( request.user_id(), request.guess_num(), response );
+            // status = guess_num->handle_req( request.user_id(), request.guess_num(), response.mutable_black_jack() );
         }
         else if( request.has_guess_num() ){
-            ok = guess_num->handle_req( user, request.guess_num(), response );
+            status = guess_num->handle_req( user, request.guess_num(), response.mutable_guess_num() );
         }
         else if( request.has_system() ){
             const System::Request& req = request.system();
+            auto response_user_info = response.mutable_system()->mutable_user();
+            auto op = req.operation();
+            if( op != System::Request_Operation_KeepAlive ){
 
-            if( req.operation() == System::Request_Operation_KeepAlive )
-                continue;
+                if( req.has_game_type() )
+                    user.set_game_type( req.game_type() );
 
-            switch( req.operation() ){
-                case System::Request_Operation_Update:
-                    ok = update_player_list( user.room_id(), req.game_type() );
-                    break;
-                case System::Request_Operation_CheckReady:
-                    ok = check_ready( user, req.game_type() );
-                    break;
-                case System::Request_Operation_JoinGame:
-                    ok = join_game( user, req.game_type(), response );
-                    break;
-                case System::Request_Operation_NewUser:
-                    ok = add_user( response );
-                    user = response.system().user();
-                    break;
-                case System::Request_Operation_QuitRoom:
-                    // TODO
-                    break;
-                case System::Request_Operation_QuitGame:
-                    ok = true;
-                    keep_running = false;
-                    break;
+                if( user.has_game_type() ){
+                    switch( user.game_type() ){
+                        case System::GUESSNUM:
+                            std::cerr << "User game type: guessnum \n"; 
+                            status = guess_num->do_operation( op, user, response_user_info  );
+                            break;
+
+                        case System::JACK:
+                            std::cerr << "User game type: jack \n"; 
+                            // status = blackjack->do_operation( op, user, response.mutable_user() );
+                            break;
+                    }
+                }
+                else{
+                    std::cerr << "User game type: none \n"; 
+                    switch( op ){
+                        case System::Request_Operation_NewUser:
+                            if( req.has_name() )
+                                user.set_name( req.name() );
+                            else
+                                user.set_name( std::string("Anomynous") );
+
+                            initialize_user( user );
+                            *response_user_info = user;
+                            break;
+
+                        case System::Request_Operation_JoinGame:
+                            keep_running = false;
+                            break;
+                    }
+                }
             }
         }
 
-        if( !ok )
-            response.set_status(true);
-        else
-            response.set_status(false); 
+        response.set_status(status);
 
         if( !Connection::send_message(req_socket, response) ){
             /* TODO */
@@ -115,59 +128,7 @@ static void process(int req_socket){
 
 }
 
-static bool update_player_list( int room_id, System::Type game_type ){
-
-    System::PlayerList players;
-
-    switch( game_type ){
-        case System::GUESSNUM:
-            return guess_num->get_players( room_id, players );
-            break;
-        case System::JACK:
-            // return guess_num->get_players( room_id, players );
-            break;
-    }
-}
-static bool check_ready( System::User& user, System::Type game_type ){
-    switch( game_type ){
-        case System::GUESSNUM:
-            return guess_num->check_game_ready( user.room_id() );
-            break;
-        case System::JACK:
-            // return guess_num->check_game_ready( user );
-            break;
-    }
-}
-static bool join_game( System::User& user , System::Type game_type, Model::Reply& response ){
-    switch( game_type ){
-        case System::GUESSNUM:
-            guess_num->add_player( user );
-            break;
-        case System::JACK:
-            break;
-    }
-
-    set_response( user, response );
-}
-static bool add_user( Model::Reply& response ){
-    
-    auto user = System::User();
+static void initialize_user( System::User& user ){
     user.set_money( CONFIG::INITIAL_MONEY );
-    user.set_id( generate_new_id() );
-    set_response( user, response );
-    return true;
-}
-
-static void set_response( System::User& user, Model::Reply& response ){
-
-    System::Reply* sys = response.mutable_system();
-    System::Reply res;
-    System::User* _user = res.mutable_user();
-
-    *_user = user;
-    *sys = res;
-}
-static int generate_new_id(){
-    std::srand(std::time(0)); // use current time as seed for random generator
-    return std::rand();
+    user.set_game_type( System::NONE );
 }

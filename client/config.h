@@ -2,8 +2,9 @@
 #define CONFIG_H
 
 namespace Config {
-    const int KeepAliveFrequency = 4000;
-    const int CheckReadyFrequency = 5000;
+    const int KeepAliveFrequency = 3500;
+    const int CheckReadyFrequency = 3500;
+    const int GameMetaUpdateFrequency = 5000;
 }
 
 #endif // CONFIG_H

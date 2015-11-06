@@ -4,11 +4,12 @@
 #include <QThreadPool>
 #include <QRunnable>
 #include <QDebug>
+#include <QDebug>
 #include <functional>
 #include "main.model.pb.h"
 #include "connection.hpp"
 
-using CallBack = std::function<void(Model::Reply*)>;
+using Callback = std::function<void(Model::Reply*)>;
 
 class RequestProcessor : public QObject,  public QRunnable
 {
@@ -36,14 +37,16 @@ class Request: public QObject {
 
 public:
     void setUp(int _socket);
-    void joinGame( System::Type type, CallBack callback );
-    void system( System::Request::Operation, CallBack callback );
+    void system( System::Request::Operation, Callback callback );
+    void system_joinGame( System::Type type, Callback callback );
+    void system_newUser( const std::string& name, Callback callback );
 
-public slots:
+    void guessnum_submit( GuessNum::Guesses* guesses, Callback callback );
+private slots:
     void send_fail();
     void receive_fail();
 
-private:
+protected:
     void registerRequest( Model::Request* req, std::function<void(Model::Reply*)> callback );
 
 };

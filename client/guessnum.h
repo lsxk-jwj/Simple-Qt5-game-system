@@ -8,6 +8,7 @@
 #include <QLabel>
 #include <QTimer>
 #include <QLineEdit>
+#include "request.h"
 
 namespace Ui {
 class GuessNumClient;
@@ -20,6 +21,7 @@ class GuessNumClient : public QDialog
 public:
     explicit GuessNumClient(QWidget *parent = 0);
     ~GuessNumClient();
+    void start();
 
 private slots:
 
@@ -29,10 +31,14 @@ private slots:
 private:
 
     void setUpDisplay();
+    void setGuessResult(int resultA, int resultB );
+    void waitRivalDone();
+
 
     Ui::GuessNumClient *ui;
     QList<QLabel*> magic_numbers;
     QList<QLineEdit*> guess_numbers;
+    QTimer* updator;
 };
 
 #endif // GuessNumClient_H

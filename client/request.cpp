@@ -1,14 +1,40 @@
 #include "request.h"
 
+void Request::guessnum_submit( GuessNum::Guesses* guesses, Callback callback ){
+    auto req = new Model::Request();
+    auto guessnum_req = req->mutable_guess_num();
+    guessnum_req->set_allocated_submission(guesses);
+    guessnum_req->set_command(GuessNum::SUBMIT);
+    registerRequest( req, callback );
+}
+void Request::system_joinGame( System::Type type, Callback callback ){
+    auto req = new Model::Request();
+    auto sys_req = req->mutable_system();
+    sys_req->set_operation(System::Request_Operation_JoinGame);
+    sys_req->set_game_type(type);
+    registerRequest( req, callback );
+}
+void Request::system_newUser( const std::string& name, Callback callback ){
+    auto req = new Model::Request();
+    auto sys_req = req->mutable_system();
+    sys_req->set_operation(System::Request_Operation_NewUser);
+    sys_req->set_name(name);
+    registerRequest( req, callback );
+}
+void Request::system( System::Request::Operation op, Callback callback ){
+    auto req = new Model::Request();
+    req->mutable_system()->set_operation(op);
+    registerRequest( req, callback );
+}
 void Request::setUp(int _socket){
     socket = _socket;
     processor.setMaxThreadCount(10);
 }
 
-void Request::registerRequest( Model::Request* req, CallBack callback ){
+void Request::registerRequest( Model::Request* req, Callback callback ){
     RequestProcessor* worker = new RequestProcessor(socket, req);
-    QObject::connect(worker, &RequestProcessor::receive_done, 
-        [=]( Model::Reply* reply){ 
+    QObject::connect(worker, &RequestProcessor::receive_done,
+        [=]( Model::Reply* reply){
             callback(reply);
             delete reply;
         }
@@ -17,19 +43,6 @@ void Request::registerRequest( Model::Request* req, CallBack callback ){
     QObject::connect(worker, &RequestProcessor::send_fail, this, &Request::send_fail );
     processor.start(worker); // Let threadpool take over RequestProcessor, no need to delete it
 }
-void Request::joinGame( System::Type type, CallBack callback ){
-    auto req = new Model::Request();
-    auto sys_req = req->mutable_system();
-    sys_req->set_operation(System::Request_Operation_JoinGame);
-    sys_req->set_game_type(type);
-    registerRequest( req, callback );
-}
-void Request::system( System::Request::Operation op, CallBack callback ){
-    auto req = new Model::Request();
-    req->mutable_system()->set_operation(op);
-    registerRequest( req, callback );
-}
-
 void Request::receive_fail(){
     qDebug() << "Receive fail\n";
 }

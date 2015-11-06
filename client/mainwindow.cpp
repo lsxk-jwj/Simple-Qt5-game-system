@@ -3,6 +3,8 @@
 #include "ui_mainwindow.h"
 #include "changename.h"
 
+extern Request request;
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow){
@@ -56,13 +58,12 @@ void MainWindow::joinGame(System::Type type){
     }
     qDebug() << "Joining game\n";
 
-    request.joinGame( type, [this, type](Model::Reply* reply){
-        user.set_room_id( reply->system().user().room_id() );
-        waitForRival();
+    request.system_joinGame( type, [this, type](Model::Reply* reply){
+        waitForRival(type);
     });
 }
 
-void MainWindow::waitForRival(){
+void MainWindow::waitForRival(System::Type type){
 
     qDebug() << "Waiting for new rivals\n";
 
@@ -72,26 +73,39 @@ void MainWindow::waitForRival(){
     QObject::connect(timer, SIGNAL(timeout()), this, SLOT(checkReady()));
     timer->start(Config::CheckReadyFrequency);
 
-    if(this->waitDialog->exec() == QDialog::Rejected){
+    this->waitDialog->exec();
+
+    if( this->waitDialog->result() == QDialog::Accepted){
+        timer->stop();
+        if( type == System::GUESSNUM ){
+            qDebug() << "Starting guess num";
+            guess_num_client->start();
+        }
+        else {
+            qDebug() << "Starting blackjack";
+            // blackjack_client->start();
+        }
+    }
+    else {
         qDebug() << "Cancel waiting\n";
+
         this->keepAlive->start();
+
         request.system( System::Request_Operation_QuitRoom,  [this](Model::Reply* reply){
             qDebug() << "Room cleaned up";
         });
     }
-
 }
 void MainWindow::checkReady(){
+    qDebug() << "Checking if room is ready\n";
+
     request.system( System::Request_Operation_CheckReady, [this](Model::Reply* reply){
         if( reply->status() ){
-            startGame();
+            waitDialog->done(QDialog::Accepted);
         }
     });
 }
-void MainWindow::startGame(){
-    qDebug() << "game started\n";
-    emit this->waitDialog->accepted();
-}
+
 
 void MainWindow::warnConnection(){
    
@@ -165,10 +179,9 @@ void MainWindow::makeConnection(){
         this->keepAlive->start();
 
         if( !user.has_id() ){
-            request.system(System::Request_Operation_NewUser, [this](Model::Reply* reply){
+            request.system_newUser( user.name(), [this](Model::Reply* reply){
                 qDebug() << "New user done\n";
-                ui->BlackJackButton->setEnabled(true);
-                ui->GuessNumButton->setEnabled(true);
+                initializeUser(reply->system().user());
             });
         }
     }
@@ -176,4 +189,12 @@ void MainWindow::makeConnection(){
       emit connectionInvalid();
     }
 
+}
+
+void MainWindow::initializeUser( const System::User& user_info ){
+
+    user.set_money( user_info.money() );
+    ui->money->setText(QString::number(user.money()));
+    ui->BlackJackButton->setEnabled(true);
+    ui->GuessNumButton->setEnabled(true);
 }

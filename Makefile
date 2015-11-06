@@ -34,6 +34,8 @@ LIB_OBJFILES := $(addprefix $(BIN)/, $(patsubst %.cpp,%.o,$(LIB_SRCFILES)))
 
 all: init_dir model $(SERVER_BUILD) 
 
+server: $(SERVER_BUILD)
+
 run:
 	@export LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(LIBDIRS) && ./build/server
 

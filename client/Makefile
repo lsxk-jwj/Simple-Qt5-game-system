@@ -734,6 +734,18 @@ compiler_moc_header_clean:
 		/usr/include/qt5/QtGui/qtextformat.h \
 		/usr/include/qt5/QtGui/qpen.h \
 		/usr/include/qt5/QtGui/qtextoption.h \
+		request.h \
+		/usr/include/qt5/QtCore/QThreadPool \
+		/usr/include/qt5/QtCore/qthreadpool.h \
+		/usr/include/qt5/QtCore/qthread.h \
+		/usr/include/qt5/QtCore/qrunnable.h \
+		/usr/include/qt5/QtCore/QRunnable \
+		/usr/include/qt5/QtCore/QDebug \
+		../model/build/main.model.pb.h \
+		../model/build/jack.model.pb.h \
+		../model/build/system.model.pb.h \
+		../model/build/guess.model.pb.h \
+		../lib/connection.hpp \
 		guessnum.h
 	/usr/lib/x86_64-linux-gnu/qt5/bin/moc $(DEFINES) $(INCPATH) -I/usr/include/c++/4.8 -I/usr/include/x86_64-linux-gnu/c++/4.8 -I/usr/include/c++/4.8/backward -I/usr/lib/gcc/x86_64-linux-gnu/4.8/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/4.8/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include guessnum.h -o ../build/bin/client/moc_guessnum.cpp
 
@@ -1726,6 +1738,18 @@ compiler_clean: compiler_moc_header_clean compiler_uic_clean
 		/usr/include/qt5/QtGui/qtextformat.h \
 		/usr/include/qt5/QtGui/qpen.h \
 		/usr/include/qt5/QtGui/qtextoption.h \
+		request.h \
+		/usr/include/qt5/QtCore/QThreadPool \
+		/usr/include/qt5/QtCore/qthreadpool.h \
+		/usr/include/qt5/QtCore/qthread.h \
+		/usr/include/qt5/QtCore/qrunnable.h \
+		/usr/include/qt5/QtCore/QRunnable \
+		/usr/include/qt5/QtCore/QDebug \
+		../model/build/main.model.pb.h \
+		../model/build/jack.model.pb.h \
+		../model/build/system.model.pb.h \
+		../model/build/guess.model.pb.h \
+		../lib/connection.hpp \
 		ui_guessnum.h \
 		/usr/include/qt5/QtCore/QVariant \
 		/usr/include/qt5/QtWidgets/QAction \
@@ -1741,8 +1765,6 @@ compiler_clean: compiler_moc_header_clean compiler_uic_clean
 		/usr/include/qt5/QtWidgets/QButtonGroup \
 		/usr/include/qt5/QtWidgets/qbuttongroup.h \
 		/usr/include/qt5/QtWidgets/QFrame \
-		/usr/include/qt5/QtWidgets/QGroupBox \
-		/usr/include/qt5/QtWidgets/qgroupbox.h \
 		/usr/include/qt5/QtWidgets/QHeaderView \
 		/usr/include/qt5/QtWidgets/qheaderview.h \
 		/usr/include/qt5/QtWidgets/qabstractitemview.h \
@@ -1760,7 +1782,10 @@ compiler_clean: compiler_moc_header_clean compiler_uic_clean
 		/usr/include/qt5/QtWidgets/qtabbar.h \
 		/usr/include/qt5/QtWidgets/qtabwidget.h \
 		/usr/include/qt5/QtWidgets/qrubberband.h \
-		/usr/include/qt5/QtWidgets/QWidget
+		/usr/include/qt5/QtWidgets/QWidget \
+		config.h \
+		/usr/include/qt5/QtWidgets/QMessageBox \
+		/usr/include/qt5/QtWidgets/qmessagebox.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o ../build/bin/client/guessnum.o guessnum.cpp
 
 ../build/bin/client/blackjack.o: blackjack.cpp blackjack.h \
