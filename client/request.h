@@ -36,12 +36,22 @@ class Request: public QObject {
     QThreadPool processor;
 
 public:
+
     void setUp(int _socket);
+
+    // System-wide requests
     void system( System::Request::Operation, Callback callback );
     void system_joinGame( System::Type type, Callback callback );
     void system_newUser( const std::string& name, Callback callback );
 
+    // Requests specific to guess_num
     void guessnum_submit( GuessNum::Guesses* guesses, Callback callback );
+
+    // Requests specific to blackjack
+    void blackjack( BlackJack::Command cmd, Callback callback );
+    void blackjack_hit( bool acted_on_deck2, Callback callback);
+    void blackjack_set_finish( bool deck2_the_best, Callback callback );
+
 private slots:
     void send_fail();
     void receive_fail();

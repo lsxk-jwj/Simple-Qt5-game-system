@@ -13,10 +13,11 @@
 #include "request.h"
 #include "guessnum.h"
 #include "blackjack.h"
+#include "blackjackresultdialog.h"
 #include "config.h"
 
 namespace Ui {
-class MainWindow;
+    class MainWindow;
 }
 
 class MainWindow : public QMainWindow
@@ -30,11 +31,11 @@ public:
 private slots:
 
     void showServerConfigDialog();
-    void warnConnection();
-    void changeName();
+    void warnConnection(); 
     void tryConnect();
     void checkReady();
     void keepAlivePokeServer();
+    void increaseMoney(int amount);
 
 signals:
     void connectionInvalid();
@@ -42,12 +43,15 @@ signals:
 private:
 
     void initializeWaitDialog();
+    void initializeGuessNumDialogs();
+    void initializeBlackjackDialogs();
     void initializeUser(const System::User& user);
+    void changeName();
     void makeConnection();
     void waitForRival(System::Type t);
     void joinGame(System::Type t);
     void startGame();
-    void initializeUser( System::User* user_info );
+
 
     System::User user;
     Ui::MainWindow *ui;
@@ -61,7 +65,14 @@ private:
     // Game
     GuessNumClient* guess_num_client;
     BlackJackClient* blackjack_client;
+    BlackjackResultDialog* blackjack_result_dialog;
 
+    // Dialogs for Guess Number
+    QMessageBox* guessnum_congrat;
+    QMessageBox* guessnum_loser;
+    QMessageBox* guessnum_winner;
+
+    // Dialogs for Blackjack
 };
 
 #endif // MAINWINDOW_H

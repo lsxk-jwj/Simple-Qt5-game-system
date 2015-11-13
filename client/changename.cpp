@@ -6,7 +6,8 @@ ChangeName::ChangeName(QWidget *parent, std::string name) :
     ui(new Ui::ChangeName)
 {
     ui->setupUi(this);
-    ui->name->setText(QString::fromStdString(name));
+    ui->name->setPlaceholderText(QString::fromStdString(name));
+    this->setWindowTitle(QString("Hello!!"));
 }
 
 const QString ChangeName::getName(){

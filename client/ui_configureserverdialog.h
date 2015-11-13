@@ -28,7 +28,7 @@ class Ui_ConfigureServerDialog
 {
 public:
     QDialogButtonBox *buttonBox;
-    QWidget *widget;
+    QWidget *layoutWidget;
     QVBoxLayout *verticalLayout;
     QHBoxLayout *horizontalLayout;
     QLabel *label;
@@ -47,20 +47,20 @@ public:
         buttonBox->setGeometry(QRect(0, 120, 301, 32));
         buttonBox->setOrientation(Qt::Horizontal);
         buttonBox->setStandardButtons(QDialogButtonBox::Cancel|QDialogButtonBox::Ok);
-        widget = new QWidget(ConfigureServerDialog);
-        widget->setObjectName(QStringLiteral("widget"));
-        widget->setGeometry(QRect(40, 20, 224, 89));
-        verticalLayout = new QVBoxLayout(widget);
+        layoutWidget = new QWidget(ConfigureServerDialog);
+        layoutWidget->setObjectName(QStringLiteral("layoutWidget"));
+        layoutWidget->setGeometry(QRect(40, 20, 224, 89));
+        verticalLayout = new QVBoxLayout(layoutWidget);
         verticalLayout->setObjectName(QStringLiteral("verticalLayout"));
         verticalLayout->setContentsMargins(0, 0, 0, 0);
         horizontalLayout = new QHBoxLayout();
         horizontalLayout->setObjectName(QStringLiteral("horizontalLayout"));
-        label = new QLabel(widget);
+        label = new QLabel(layoutWidget);
         label->setObjectName(QStringLiteral("label"));
 
         horizontalLayout->addWidget(label);
 
-        ServerIP = new QLineEdit(widget);
+        ServerIP = new QLineEdit(layoutWidget);
         ServerIP->setObjectName(QStringLiteral("ServerIP"));
 
         horizontalLayout->addWidget(ServerIP);
@@ -70,12 +70,12 @@ public:
 
         horizontalLayout_2 = new QHBoxLayout();
         horizontalLayout_2->setObjectName(QStringLiteral("horizontalLayout_2"));
-        label_2 = new QLabel(widget);
+        label_2 = new QLabel(layoutWidget);
         label_2->setObjectName(QStringLiteral("label_2"));
 
         horizontalLayout_2->addWidget(label_2);
 
-        ServerPort = new QLineEdit(widget);
+        ServerPort = new QLineEdit(layoutWidget);
         ServerPort->setObjectName(QStringLiteral("ServerPort"));
 
         horizontalLayout_2->addWidget(ServerPort);
@@ -93,7 +93,7 @@ public:
 
     void retranslateUi(QDialog *ConfigureServerDialog)
     {
-        ConfigureServerDialog->setWindowTitle(QApplication::translate("ConfigureServerDialog", "Dialog", 0));
+        ConfigureServerDialog->setWindowTitle(QApplication::translate("ConfigureServerDialog", "Change Server Configuration", 0));
         label->setText(QApplication::translate("ConfigureServerDialog", "Server IP: ", 0));
         ServerIP->setText(QApplication::translate("ConfigureServerDialog", "127.0.1.1", 0));
         label_2->setText(QApplication::translate("ConfigureServerDialog", "Server port: ", 0));

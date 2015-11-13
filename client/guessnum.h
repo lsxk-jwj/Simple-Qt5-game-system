@@ -8,6 +8,8 @@
 #include <QLabel>
 #include <QTimer>
 #include <QLineEdit>
+#include <QThread>
+#include <QMessageBox>
 #include "request.h"
 
 namespace Ui {
@@ -23,22 +25,36 @@ public:
     ~GuessNumClient();
     void start();
 
-private slots:
+signals:
+    void waitForRival();
+    void winGame();
+    void loseGame();
+    void modifyPlayerMoney(int);
 
+public slots:
+    void cleanUp();
+
+private slots:
     void submitAnswer();
     void update();
+    void checkRivalFinish();
 
 private:
 
+    void setMagicNumber();
     void setUpDisplay();
     void setGuessResult(int resultA, int resultB );
-    void waitRivalDone();
+    void you_winGame();
+    void you_loseGame();
+    void you_waitForRival();
 
 
     Ui::GuessNumClient *ui;
     QList<QLabel*> magic_numbers;
     QList<QLineEdit*> guess_numbers;
     QTimer* updator;
+    QTimer* waitRivalTimer;
+    int round;
 };
 
 #endif // GuessNumClient_H

@@ -10,34 +10,63 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow){
     ui->setupUi(this);
 
+    // Initialize Bet
+    ui->GuessNumBet->setNum(Config::GuessNumBet);
+    ui->BlackJackBet->setNum(Config::BlackjackBet);
+
+    // Initialize server configs
     this->socket = -1;
     this->serverIP = ui->serverIPDisplay->text();
     this->serverPort = ui->serverPortDisplay->text().toInt();
+
+    // Initialize games
     this->guess_num_client = new GuessNumClient(this);
     this->blackjack_client = new BlackJackClient(this);
     this->guess_num_client->setModal(true);
     this->blackjack_client->setModal(true);
+
+    // Initialize keep alive timer
     this->keepAlive = new QTimer();
     this->keepAlive->setInterval(Config::KeepAliveFrequency);
-    this->initializeWaitDialog();
 
+    // Initialize dialog
+    this->initializeWaitDialog();
+    this->initializeGuessNumDialogs();
+    this->initializeBlackjackDialogs();
 
     *(user.mutable_name()) = "Anomynous";
     ui->name->setText(QString("Anomynous"));
     ui->BlackJackButton->setEnabled(false);
     ui->GuessNumButton->setEnabled(false);
 
-    QObject::connect(ui->ChangeNameButton,      SIGNAL(clicked()),           this, SLOT(changeName()));
-    QObject::connect(ui->ConfigureServerButton, SIGNAL(clicked()),           this, SLOT(showServerConfigDialog()));
-    QObject::connect(ui->TryConnectionButton,   SIGNAL(clicked()),           this, SLOT(tryConnect()));
-    QObject::connect(this,                      SIGNAL(connectionInvalid()), this, SLOT(warnConnection()));
-    QObject::connect(this->keepAlive,           SIGNAL(timeout()), this, SLOT(keepAlivePokeServer()));
-    QObject::connect(ui->GuessNumButton,        &QPushButton::clicked, [this](){ joinGame(System::GUESSNUM); });
-    QObject::connect(ui->BlackJackButton,       &QPushButton::clicked, [this](){ joinGame(System::JACK); });
+    QObject::connect(ui->ConfigureServerButton,     SIGNAL(clicked()),              this, SLOT(showServerConfigDialog()));
+    QObject::connect(ui->TryConnectionButton,       SIGNAL(clicked()),              this, SLOT(tryConnect()));
+    QObject::connect(this,                          SIGNAL(connectionInvalid()),    this, SLOT(warnConnection()));
+    QObject::connect(this->keepAlive,               SIGNAL(timeout()),              this, SLOT(keepAlivePokeServer()));
+
+    QObject::connect(this->guess_num_client,        SIGNAL(waitForRival()),         this->guessnum_congrat, SLOT(exec()));
+    QObject::connect(this->guess_num_client,        SIGNAL(loseGame()),             this->guessnum_loser, SLOT(exec()));
+    QObject::connect(this->guess_num_client,        SIGNAL(winGame()),              this->guessnum_winner, SLOT(exec()));
+    QObject::connect(this->guess_num_client,        SIGNAL(modifyPlayerMoney(int)), this, SLOT(increaseMoney(int)));
+    QObject::connect(this->guess_num_client,        SIGNAL(finished(int)),          this->guess_num_client, SLOT(cleanUp()));
+
+    QObject::connect(this->blackjack_client,        SIGNAL(modifyPlayerMoney(int)), this, SLOT(increaseMoney(int)));
+    QObject::connect(this->blackjack_client,        SIGNAL(showBlackjackResult(int,int)), this->blackjack_result_dialog, SLOT(showResult(int,int)));
+    QObject::connect(this->blackjack_client,        SIGNAL(finished(int)),          this->blackjack_client, SLOT(cleanUp()));
+    QObject::connect(this->blackjack_result_dialog, SIGNAL(finished(int)),          this->blackjack_client, SLOT(accept()));
+
+    QObject::connect(ui->GuessNumButton,            &QPushButton::clicked,          [this](){ joinGame(System::GUESSNUM); });
+    QObject::connect(ui->BlackJackButton,           &QPushButton::clicked,          [this](){ joinGame(System::JACK); });
+
+    // Prompt for change name at startup.
+    changeName();
 }
 
 MainWindow::~MainWindow(){
     delete ui;
+    delete keepAlive;
+    delete waitDialog;
+    delete guessnum_loser; delete guessnum_winner; delete guessnum_congrat;
 }
 void MainWindow::initializeWaitDialog(){
     this->waitDialog = new QDialog(this);
@@ -46,9 +75,36 @@ void MainWindow::initializeWaitDialog(){
     auto layout = new QHBoxLayout();
     layout->addWidget(msg);
     layout->addWidget(cancel);
+    this->waitDialog->setModal(true);
     this->waitDialog->setLayout(layout);
     this->waitDialog->setWindowTitle("Waiting for rivals");
     connect(cancel, &QPushButton::clicked, this->waitDialog, &QDialog::reject);
+}
+void MainWindow::initializeGuessNumDialogs(){
+    guessnum_loser = new QMessageBox(this);
+    guessnum_winner = new QMessageBox(this);
+    guessnum_congrat = new QMessageBox(this);
+    guessnum_loser->setText(
+                       "<font size=18>"
+                       "You're done! Unfortunately, your rival is one step further than you! <br/>"
+                       "<font color=red><strong>You will lose all your bet!</strong></font>"
+                       "</font>"
+                );
+    guessnum_winner->setText(
+                       "<font size=18>"
+                       "Thanks for your great patience! <br/>"
+                       "<font color=green><strong>You won all the bet!</strong></font>"
+                       "</font>"
+                );
+    guessnum_congrat->setText(
+                       "<font size=18>"
+                       "Congradulations! You're done! <font color=green><strong>You'll win all the bet! </strong></font><br/>"
+                       "Please wait until your rival is done."
+                       "</font>"
+                );
+}
+void MainWindow::initializeBlackjackDialogs(){
+    this->blackjack_result_dialog = new BlackjackResultDialog(this);
 }
 
 void MainWindow::joinGame(System::Type type){
@@ -56,16 +112,13 @@ void MainWindow::joinGame(System::Type type){
         emit connectionInvalid();
         return;
     }
-    qDebug() << "Joining game\n";
 
     request.system_joinGame( type, [this, type](Model::Reply* reply){
-        waitForRival(type);
+        waitForRival(type);  
     });
 }
 
 void MainWindow::waitForRival(System::Type type){
-
-    qDebug() << "Waiting for new rivals\n";
 
     this->keepAlive->stop();
 
@@ -77,14 +130,17 @@ void MainWindow::waitForRival(System::Type type){
 
     if( this->waitDialog->result() == QDialog::Accepted){
         timer->stop();
+
+        // Once the player starts the game, take her bet and start the game
         if( type == System::GUESSNUM ){
-            qDebug() << "Starting guess num";
+            increaseMoney( (-1) * Config::GuessNumBet );
             guess_num_client->start();
         }
-        else {
-            qDebug() << "Starting blackjack";
-            // blackjack_client->start();
+        else{
+            increaseMoney( (-1) * Config::BlackjackBet );
+            blackjack_client->start();
         }
+
     }
     else {
         qDebug() << "Cancel waiting\n";
@@ -100,8 +156,13 @@ void MainWindow::checkReady(){
     qDebug() << "Checking if room is ready\n";
 
     request.system( System::Request_Operation_CheckReady, [this](Model::Reply* reply){
+
         if( reply->status() ){
+            qDebug() << "Reply: Room is ready\n";
             waitDialog->done(QDialog::Accepted);
+        }
+        else{
+            qDebug() << "Reply: Room not ready\n";
         }
     });
 }
@@ -129,8 +190,11 @@ void MainWindow::changeName(){
 
     if(dialog.exec() == QDialog::Accepted){
         QString newName = dialog.getName();
-        *(user.mutable_name()) = newName.toStdString();
-        ui->name->setText(newName);
+        if( !newName.isEmpty() ){
+            *(user.mutable_name()) = newName.toStdString();
+            ui->name->setText(newName);
+        }
+
     }
 
 }
@@ -165,7 +229,11 @@ void MainWindow::tryConnect(){
         this->makeConnection();
     }
 }
-
+void MainWindow::increaseMoney(int amount){
+    qDebug() << "Money changed to: " << user.money() + amount;
+    user.set_money( user.money() + amount );
+    ui->money->setNum( user.money() );
+}
 void MainWindow::makeConnection(){
 
     const char* ip = serverIP.toStdString().c_str();
@@ -193,8 +261,8 @@ void MainWindow::makeConnection(){
 
 void MainWindow::initializeUser( const System::User& user_info ){
 
-    user.set_money( user_info.money() );
-    ui->money->setText(QString::number(user.money()));
+    // Set initial money
+    increaseMoney( user_info.money() );
     ui->BlackJackButton->setEnabled(true);
     ui->GuessNumButton->setEnabled(true);
 }

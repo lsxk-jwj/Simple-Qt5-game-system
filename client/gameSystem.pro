@@ -25,7 +25,8 @@ SOURCES += main.cpp \
         ../model/build/jack.model.pb.cc \
         ../model/build/system.model.pb.cc \
         changename.cpp \
-    request.cpp
+    request.cpp \
+    blackjackresultdialog.cpp
 
 
 HEADERS  += mainwindow.h \
@@ -39,13 +40,15 @@ HEADERS  += mainwindow.h \
     ../model/build/system.model.pb.h \
     changename.h \
     request.h \
-    config.h
+    config.h \
+    blackjackresultdialog.h
 
 FORMS    += mainwindow.ui \
             configureserverdialog.ui \
             guessnum.ui \
             blackjack.ui \
-            changename.ui
+            changename.ui \
+    blackjackresultdialog.ui
 
  DESTDIR=../build
  OBJECTS_DIR=../build/bin/client

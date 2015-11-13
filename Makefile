@@ -1,7 +1,7 @@
 
 PWD := $(shell pwd)
-CXX := g++
-LINKER := g++
+CXX := clang++
+LINKER := clang++
 INCDIRS := -I. -I$(PWD)/lib -I$(PWD)/lib/protobuf-2.6.1/src 
 LIBDIRS := $(PWD)/lib/protobuf-2.6.1/src/.libs 
 LIBS := -l protobuf 
@@ -30,17 +30,21 @@ LIB_DIR := lib
 LIB_SRCFILES := $(wildcard $(LIB_DIR)/*.cpp) 
 LIB_OBJFILES := $(addprefix $(BIN)/, $(patsubst %.cpp,%.o,$(LIB_SRCFILES)))
 
-.PHONY: init_dir clean client model 
+.PHONY: init_dir clean client model
 
 all: init_dir model $(SERVER_BUILD) 
 
 server: $(SERVER_BUILD)
 
-run:
+run: $(SERVER_BUILD)
 	@export LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(LIBDIRS) && ./build/server
 
 run_client: client
 	@export LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(LIBDIRS) && ./build/client
+
+test_server:
+	@export LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(LIBDIRS) && gdb ./build/server
+
 
 init_dir: 
 	@mkdir -p $(BIN)/$(SERVER_DIR) $(BIN)/$(MODEL_DIR) $(MODEL_DIR)/$(MODEL_BUILD_DIR) $(BIN)/$(LIB_DIR) 

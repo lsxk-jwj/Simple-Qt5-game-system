@@ -42,6 +42,8 @@ public:
     QFrame *line;
     QLabel *label_7;
     QLabel *RivalName;
+    QLabel *label_8;
+    QLabel *RivalRound;
 
     void setupUi(QWidget *GuessNumClient)
     {
@@ -134,6 +136,21 @@ public:
         RivalName->setFont(font4);
         RivalName->setStyleSheet(QStringLiteral("color: rgb(170, 85, 0)"));
         RivalName->setAlignment(Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter);
+        label_8 = new QLabel(GuessNumClient);
+        label_8->setObjectName(QStringLiteral("label_8"));
+        label_8->setGeometry(QRect(100, 640, 281, 71));
+        label_8->setFont(font3);
+        label_8->setAlignment(Qt::AlignCenter);
+        RivalRound = new QLabel(GuessNumClient);
+        RivalRound->setObjectName(QStringLiteral("RivalRound"));
+        RivalRound->setGeometry(QRect(400, 640, 281, 71));
+        QFont font5;
+        font5.setPointSize(30);
+        font5.setBold(true);
+        font5.setWeight(75);
+        RivalRound->setFont(font5);
+        RivalRound->setStyleSheet(QStringLiteral("color: rgb(170, 85, 0)"));
+        RivalRound->setAlignment(Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter);
 
         retranslateUi(GuessNumClient);
 
@@ -151,6 +168,8 @@ public:
         round->setText(QApplication::translate("GuessNumClient", "0", 0));
         label_7->setText(QApplication::translate("GuessNumClient", "Your rival:", 0));
         RivalName->setText(QApplication::translate("GuessNumClient", "RivalName", 0));
+        label_8->setText(QApplication::translate("GuessNumClient", "Your rival's round:", 0));
+        RivalRound->setText(QApplication::translate("GuessNumClient", "0", 0));
     } // retranslateUi
 
 };

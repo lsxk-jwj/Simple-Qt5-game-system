@@ -6,7 +6,6 @@ void GameRoom::initialize( System::RoomMeta&& _meta ){
 }
 
 bool GameRoom::is_full(){
-    std::lock_guard<std::mutex> lock(mutex);
     return player_list.player_size() >= playerNum;
 }
 
@@ -44,8 +43,20 @@ void GameRoom::set_player_meta( int id, System::Meta&& meta ){
     *(player_list.mutable_player(id)->mutable_meta()) = meta;
 }
 
-System::Meta GameRoom::get_player_meta( int id ){
+const System::Meta& GameRoom::get_player_meta( int id ){
     std::lock_guard<std::mutex> lock(mutex);
     return player_list.player(id).meta();
 }
 
+void GameRoom::update_player_meta( int id, std::function<void(System::Meta* meta)> update_function ){
+    std::lock_guard<std::mutex> lock(mutex);
+    update_function( player_list.mutable_player(id)->mutable_meta() );
+}
+
+void GameRoom::set_finished( int id ){
+    hasFinished[id] = true;
+}
+
+bool GameRoom::check_finish( int id ){
+    return hasFinished[id];
+}

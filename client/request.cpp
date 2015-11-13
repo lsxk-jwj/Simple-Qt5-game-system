@@ -7,6 +7,24 @@ void Request::guessnum_submit( GuessNum::Guesses* guesses, Callback callback ){
     guessnum_req->set_command(GuessNum::SUBMIT);
     registerRequest( req, callback );
 }
+void Request::blackjack( BlackJack::Command cmd, Callback callback ){
+    auto req = new Model::Request();
+    req->mutable_blackjack()->set_command(cmd);
+    registerRequest( req, callback );
+}
+void Request::blackjack_hit( bool acted_on_deck2, Callback callback ){
+    auto req = new Model::Request();
+    req->mutable_blackjack()->set_command(BlackJack::HIT);
+    req->mutable_blackjack()->set_flag(acted_on_deck2);
+    registerRequest( req, callback );
+}
+void Request::blackjack_set_finish( bool deck2_the_best, Callback callback ){
+    auto req = new Model::Request();
+    req->mutable_blackjack()->set_command(BlackJack::FINISH);
+    req->mutable_blackjack()->set_flag(deck2_the_best);
+    registerRequest( req, callback );
+}
+
 void Request::system_joinGame( System::Type type, Callback callback ){
     auto req = new Model::Request();
     auto sys_req = req->mutable_system();

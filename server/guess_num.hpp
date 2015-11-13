@@ -6,10 +6,10 @@
 #include <algorithm>
 #include <iostream>
 #include <array>
-#include "game_structure.hpp"
+#include "game_prototype.hpp"
 #include "main.model.pb.h"
 
-class GuessNumServer: public GameStructure {
+class GuessNumServer: public GamePrototype {
     
     std::array<int,10> random_num_list;
 

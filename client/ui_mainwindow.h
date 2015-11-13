@@ -49,7 +49,7 @@ public:
     QPushButton *BlackJackButton;
     QHBoxLayout *horizontalLayout_7;
     QLabel *label_7;
-    QLabel *GuessNumBet_2;
+    QLabel *BlackJackBet;
     QSpacerItem *verticalSpacer;
     QSpacerItem *verticalSpacer_2;
     QVBoxLayout *verticalLayout_2;
@@ -62,7 +62,6 @@ public:
     QLabel *connectionStatus;
     QPushButton *TryConnectionButton;
     QPushButton *ConfigureServerButton;
-    QPushButton *ChangeNameButton;
 
     void setupUi(QMainWindow *MainWindow)
     {
@@ -205,12 +204,12 @@ public:
 
         horizontalLayout_7->addWidget(label_7, 0, Qt::AlignRight);
 
-        GuessNumBet_2 = new QLabel(layoutWidget);
-        GuessNumBet_2->setObjectName(QStringLiteral("GuessNumBet_2"));
-        GuessNumBet_2->setFont(font5);
-        GuessNumBet_2->setAlignment(Qt::AlignCenter);
+        BlackJackBet = new QLabel(layoutWidget);
+        BlackJackBet->setObjectName(QStringLiteral("BlackJackBet"));
+        BlackJackBet->setFont(font5);
+        BlackJackBet->setAlignment(Qt::AlignCenter);
 
-        horizontalLayout_7->addWidget(GuessNumBet_2, 0, Qt::AlignLeft);
+        horizontalLayout_7->addWidget(BlackJackBet, 0, Qt::AlignLeft);
 
 
         board->addLayout(horizontalLayout_7);
@@ -283,14 +282,7 @@ public:
 
         board->addWidget(ConfigureServerButton);
 
-        ChangeNameButton = new QPushButton(layoutWidget);
-        ChangeNameButton->setObjectName(QStringLiteral("ChangeNameButton"));
-
-        board->addWidget(ChangeNameButton);
-
         MainWindow->setCentralWidget(centralWidget);
-        layoutWidget->raise();
-        BlackJackButton->raise();
 
         retranslateUi(MainWindow);
 
@@ -299,7 +291,7 @@ public:
 
     void retranslateUi(QMainWindow *MainWindow)
     {
-        MainWindow->setWindowTitle(QApplication::translate("MainWindow", "Game Board", 0));
+        MainWindow->setWindowTitle(QApplication::translate("MainWindow", "The Fun Fun CN Game", 0));
         label_2->setText(QApplication::translate("MainWindow", "Hi!", 0));
         name->setText(QApplication::translate("MainWindow", "Anomynous", 0));
         label_5->setText(QApplication::translate("MainWindow", "Money You Have:", 0));
@@ -309,7 +301,7 @@ public:
         GuessNumBet->setText(QApplication::translate("MainWindow", "3000", 0));
         BlackJackButton->setText(QApplication::translate("MainWindow", "BlackJack", 0));
         label_7->setText(QApplication::translate("MainWindow", "Bet:", 0));
-        GuessNumBet_2->setText(QApplication::translate("MainWindow", "3000", 0));
+        BlackJackBet->setText(QApplication::translate("MainWindow", "3000", 0));
         label->setText(QApplication::translate("MainWindow", "Server IP:   ", 0));
         serverIPDisplay->setText(QApplication::translate("MainWindow", "127.0.1.1", 0));
         label_3->setText(QApplication::translate("MainWindow", "Server port:   ", 0));
@@ -317,7 +309,6 @@ public:
         connectionStatus->setText(QString());
         TryConnectionButton->setText(QApplication::translate("MainWindow", "Connect", 0));
         ConfigureServerButton->setText(QApplication::translate("MainWindow", "Configure Server", 0));
-        ChangeNameButton->setText(QApplication::translate("MainWindow", "Change My Name", 0));
     } // retranslateUi
 
 };

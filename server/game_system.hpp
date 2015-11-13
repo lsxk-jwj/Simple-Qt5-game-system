@@ -10,6 +10,7 @@
 #include "connection.hpp"
 #include "config.hpp"
 #include "guess_num.hpp"
+#include "blackjack.hpp"
 #include "main.model.pb.h"
 
 #define TIMEOUT_LIMIT 3

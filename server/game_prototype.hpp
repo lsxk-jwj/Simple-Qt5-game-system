@@ -13,7 +13,7 @@
 #include "main.model.pb.h"
 #include "game_room.hpp"
 
-class GameStructure {
+class GamePrototype {
     
     const int playerNum;
     const int roomNum;
@@ -26,7 +26,7 @@ protected:
 
 public:
 
-    GameStructure(int _roomNum, int _playerNum): roomNum(_roomNum), playerNum(_playerNum){
+    GamePrototype(int _roomNum, int _playerNum): roomNum(_roomNum), playerNum(_playerNum){
         if( playerNum <= 0 || roomNum <= 0 ){
             std::cerr << "Impossible room number: " << roomNum << " or impossible player number: " << playerNum << std::endl;
             exit(0);
@@ -38,11 +38,12 @@ public:
 private:
 
     int generate_room_id();
-    bool get_rival_name( int room_id, int user_id, System::User* rival );
-    bool get_rival_meta( int room_id, int user_id, System::User* rival );
-    bool check_game_ready( int room_id );
+    bool get_rival_name( GameRoom* room, int user_id, System::User* rival );
+    bool get_rival_meta( GameRoom* room, int user_id, System::User* rival );
+    bool check_game_ready( GameRoom* room );
+    bool check_rival_finish( GameRoom* room, int user_id );
     bool add_player( System::User& current_user );
-    bool quit_game( System::User& user );
+    bool quit_room( int room_id );
 
 protected:
     virtual void initialize( int room_id ) = 0;

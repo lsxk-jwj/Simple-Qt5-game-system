@@ -2,10 +2,12 @@
 
 Connection connection;
 GuessNumServer* guess_num;
+BlackJackServer* blackjack;
 
 void initialize_game(Connection&& conn){
     connection = conn; 
     guess_num = new GuessNumServer(CONFIG::ROOM_NUMBER, CONFIG::PLAYER_NUMBER);
+    blackjack = new BlackJackServer(CONFIG::ROOM_NUMBER, CONFIG::PLAYER_NUMBER);
 }
 
 void start_game(){
@@ -24,7 +26,7 @@ void start_game(){
 }
 
 static void process(int req_socket){
-
+    
     Connection::set_timeout(req_socket);
 
     System::User user;
@@ -63,8 +65,8 @@ static void process(int req_socket){
         bool status = true;
         Model::Reply response;
 
-        if( request.has_black_jack() ){
-            // status = guess_num->handle_req( request.user_id(), request.guess_num(), response.mutable_black_jack() );
+        if( request.has_blackjack() ){
+            status = blackjack->handle_req( user, request.blackjack(), response.mutable_blackjack() );
         }
         else if( request.has_guess_num() ){
             status = guess_num->handle_req( user, request.guess_num(), response.mutable_guess_num() );
@@ -87,7 +89,7 @@ static void process(int req_socket){
 
                         case System::JACK:
                             std::cerr << "User game type: jack \n"; 
-                            // status = blackjack->do_operation( op, user, response.mutable_user() );
+                            status = blackjack->do_operation( op, user, response_user_info );
                             break;
                     }
                 }
@@ -104,9 +106,9 @@ static void process(int req_socket){
                             *response_user_info = user;
                             break;
 
-                        case System::Request_Operation_JoinGame:
-                            keep_running = false;
-                            break;
+                        // case System::Request_Operation_QuitGame:
+                            // keep_running = false;
+                            // break;
                     }
                 }
             }
