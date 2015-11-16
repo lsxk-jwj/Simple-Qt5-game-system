@@ -71,7 +71,7 @@ client:
 
 dep: 
 	which iprotoc || \
-	(wget --no-parent http://csie.ntu.edu.tw/~b03902074/protobuf.zip -P lib && cd lib && unzip protobuf* && rm *.zip && cd protobuf && pwd && ./autogen.sh && ./configure && make)
+	(wget --no-parent http://csie.ntu.edu.tw/~b03902074/protobuf.zip -P lib && cd lib && unzip protobuf* && rm *.zip && cd protobuf && ./autogen.sh && ./configure && make)
 
 clean:
 	rm -rf $(BUILD_DIR) $(MODEL_DIR)/$(MODEL_BUILD_DIR)/*
