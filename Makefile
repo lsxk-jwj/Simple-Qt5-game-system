@@ -40,7 +40,10 @@ run: $(SERVER_BUILD) export_lib
 	./build/server
 
 run_client: export_lib
-	gdb ./build/client
+	./build/client
+
+run_both:
+	./run_both.sh
 
 test_server: export_lib
 	gdb ./build/server
