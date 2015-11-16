@@ -56,9 +56,9 @@ FORMS    += mainwindow.ui \
  MOC_DIR=../build/bin/client
 
 
-unix:!macx: LIBS += -L../lib/protobuf-2.6.1/src/.libs/ -lprotobuf
+unix:!macx: LIBS += -L../lib/protobuf-2.6.1/src/.libs/ -L/usr/local/lib -lprotobuf
 
 INCLUDEPATH += ../lib/protobuf-2.6.1/src/.libs   ../lib ../model/build/
 DEPENDPATH += ../lib/protobuf-2.6.1/src/.libs
 
-unix:!macx: PRE_TARGETDEPS += ../lib/protobuf-2.6.1/src/.libs/libprotoc.a
+#unix:!macx: PRE_TARGETDEPS += ../lib/protobuf-2.6.1/src/.libs/libprotoc.a

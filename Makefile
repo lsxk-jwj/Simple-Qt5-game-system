@@ -30,26 +30,23 @@ LIB_DIR := lib
 LIB_SRCFILES := $(wildcard $(LIB_DIR)/*.cpp) 
 LIB_OBJFILES := $(addprefix $(BIN)/, $(patsubst %.cpp,%.o,$(LIB_SRCFILES)))
 
-.PHONY: init_dir clean client model dep export_lib
+.PHONY: init_dir clean client model dep 
 
-all: export_lib init_dir model $(SERVER_BUILD)
+all:  init_dir model $(SERVER_BUILD) client
 
 server: $(SERVER_BUILD)
 
-run: $(SERVER_BUILD) export_lib
-	./build/server
+run: $(SERVER_BUILD) 
+	export LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(LIBDIRS) &&./build/server
 
-run_client: export_lib
-	./build/client
+run_client: 
+	export LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(LIBDIRS) &&./build/client
 
 run_both:
-	./run_both.sh
+	export LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(LIBDIRS) &&./run_both.sh
 
-test_server: export_lib
-	gdb ./build/server
-
-export_lib:
-	export LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(LIBDIRS) 
+test_server: 
+	export LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(LIBDIRS) &&gdb ./build/server
 
 init_dir: 
 	@mkdir -p $(BIN)/$(SERVER_DIR) $(BIN)/$(MODEL_DIR) $(MODEL_DIR)/$(MODEL_BUILD_DIR) $(BIN)/$(LIB_DIR) 

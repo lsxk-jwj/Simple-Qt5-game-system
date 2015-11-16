@@ -18,7 +18,7 @@ CXXFLAGS      = -m64 -pipe -g -std=c++0x -Wall -W -D_REENTRANT -fPIE $(DEFINES)
 INCPATH       = -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++-64 -I. -I../lib/protobuf-2.6.1/src/.libs -I../lib -I../model/build -I/usr/include/qt5 -I/usr/include/qt5/QtWidgets -I/usr/include/qt5/QtGui -I/usr/include/qt5/QtCore -I../build/bin/client -I.
 LINK          = g++
 LFLAGS        = -m64
-LIBS          = $(SUBLIBS) -L/usr/X11R6/lib64 -L../lib/protobuf-2.6.1/src/.libs/ -lprotoc -lprotobuf -lQt5Widgets -L/usr/lib/x86_64-linux-gnu -lQt5Gui -lQt5Core -lGL -lpthread 
+LIBS          = $(SUBLIBS) -L/usr/X11R6/lib64 -L../lib/protobuf-2.6.1/src/.libs/ -L/usr/local/lib -lprotobuf -lQt5Widgets -L/usr/lib/x86_64-linux-gnu -lQt5Gui -lQt5Core -lGL -lpthread 
 AR            = ar cqs
 RANLIB        = 
 QMAKE         = /usr/lib/x86_64-linux-gnu/qt5/bin/qmake
@@ -174,7 +174,7 @@ first: all
 
 all: Makefile $(TARGET)
 
-$(TARGET): ../lib/protobuf-2.6.1/src/.libs/libprotoc.a ui_mainwindow.h ui_configureserverdialog.h ui_guessnum.h ui_blackjack.h ui_changename.h ui_blackjackresultdialog.h $(OBJECTS)  
+$(TARGET): ui_mainwindow.h ui_configureserverdialog.h ui_guessnum.h ui_blackjack.h ui_changename.h ui_blackjackresultdialog.h $(OBJECTS)  
 	@test -d ../build/ || mkdir -p ../build/
 	$(LINK) $(LFLAGS) -o $(TARGET) $(OBJECTS) $(OBJCOMP) $(LIBS)
 	{ test -n "$(DESTDIR)" && DESTDIR="$(DESTDIR)" || DESTDIR=.; } && test $$(gdb --version | sed -e 's,[^0-9][^0-9]*\([0-9]\)\.\([0-9]\).*,\1\2,;q') -gt 72 && gdb --nx --batch --quiet -ex 'set confirm off' -ex "save gdb-index $$DESTDIR" -ex quit '$(TARGET)' && test -f $(TARGET).gdb-index && objcopy --add-section '.gdb_index=$(TARGET).gdb-index' --set-section-flags '.gdb_index=readonly' '$(TARGET)' '$(TARGET)' && rm -f $(TARGET).gdb-index || true
