@@ -5,7 +5,7 @@ LINKER := clang++
 INCDIRS := -I. -I$(PWD)/lib -I$(PWD)/lib/protobuf-2.6.1/src 
 LIBDIRS := $(PWD)/lib/protobuf-2.6.1/src/.libs 
 LIBS := -l protobuf 
-CXXFLAGS := -std=c++11 -pthread -g #-Wall -Wextra 
+CXXFLAGS := -std=c++11 -pthread -g -DDEBUG_$(shell echo $(debug) | tr a-z A-Z ) 
 BUILD_DIR=build
 BIN := $(BUILD_DIR)/bin
 
@@ -40,7 +40,7 @@ run: $(SERVER_BUILD)
 	@export LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(LIBDIRS) && ./build/server
 
 run_client: client
-	@export LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(LIBDIRS) && ./build/client
+	@export LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(LIBDIRS) && gdb ./build/client
 
 test_server:
 	@export LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(LIBDIRS) && gdb ./build/server
@@ -71,3 +71,6 @@ client:
 
 clean:
 	rm -rf $(BUILD_DIR) $(MODEL_DIR)/$(MODEL_BUILD_DIR)/*
+
+clean_server:
+	rm -rf $(BIN)/$(SERVER_DIR)/*.o

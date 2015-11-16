@@ -45,15 +45,23 @@ static void process(int req_socket){
             /* Handle Timeout */
             std::cerr << "Error or timeout\n"; 
 
-            ++timeout_count;
-            if( timeout_count > TIMEOUT_LIMIT ){
-                if( user.has_room_id() /* If the user is in some game */){ 
-                        /* purge game  */
-                        // return;
-                }
-                else{
+            if( ++timeout_count > TIMEOUT_LIMIT ){
+                if( user.has_game_type() /* If the user is in some game */){ 
+                    /* purge from room  */
+                    switch( user.game_type() ){
+                        case System::GUESSNUM:
+                            guess_num->kick_off( user );
+                            break;
 
+                        case System::JACK:
+                            blackjack->kick_off( user );
+                            break;
+                    }
                 }
+
+                // Purge from game
+                keep_running = false;
+                continue;
             }
         }
         else{
@@ -75,42 +83,41 @@ static void process(int req_socket){
             const System::Request& req = request.system();
             auto response_user_info = response.mutable_system()->mutable_user();
             auto op = req.operation();
-            if( op != System::Request_Operation_KeepAlive ){
+            switch( op ){ 
 
-                if( req.has_game_type() )
-                    user.set_game_type( req.game_type() );
+                case System::Request_Operation_KeepAlive: 
+                    break;
 
-                if( user.has_game_type() ){
-                    switch( user.game_type() ){
-                        case System::GUESSNUM:
-                            std::cerr << "User game type: guessnum \n"; 
-                            status = guess_num->do_operation( op, user, response_user_info  );
-                            break;
+                case System::Request_Operation_NewUser: 
+                    if( req.has_name() )
+                        user.set_name( req.name() );
+                    else
+                        user.set_name( std::string("Anomynous") );
 
-                        case System::JACK:
-                            std::cerr << "User game type: jack \n"; 
-                            status = blackjack->do_operation( op, user, response_user_info );
-                            break;
+                    initialize_user( user );
+                    *response_user_info = user;
+                    break;
+
+                case  System::Request_Operation_QuitGame:
+                    std::cerr << "User leaving the game\n";
+                    keep_running = false;
+                    break;
+
+                default:
+                    if( req.has_game_type() )
+                        user.set_game_type( req.game_type() );
+
+                    if( user.has_game_type() ){
+                        switch( user.game_type() ){
+                            case System::GUESSNUM:
+                                status = guess_num->do_operation( op, user, response_user_info  );
+                                break;
+
+                            case System::JACK:
+                                status = blackjack->do_operation( op, user, response_user_info );
+                                break;
+                        }
                     }
-                }
-                else{
-                    std::cerr << "User game type: none \n"; 
-                    switch( op ){
-                        case System::Request_Operation_NewUser:
-                            if( req.has_name() )
-                                user.set_name( req.name() );
-                            else
-                                user.set_name( std::string("Anomynous") );
-
-                            initialize_user( user );
-                            *response_user_info = user;
-                            break;
-
-                        // case System::Request_Operation_QuitGame:
-                            // keep_running = false;
-                            // break;
-                    }
-                }
             }
         }
 
@@ -119,6 +126,8 @@ static void process(int req_socket){
         if( !Connection::send_message(req_socket, response) ){
             /* TODO */
             /* Handle Timeout */
+
+            std::cerr << "Sending timeout\n";
         }
     }
 

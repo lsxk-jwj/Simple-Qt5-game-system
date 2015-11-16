@@ -11,6 +11,9 @@
 #include <QThread>
 #include <QMessageBox>
 #include "request.h"
+#include "config.h"
+#include "main.model.pb.h"
+
 
 namespace Ui {
 class GuessNumClient;
@@ -29,10 +32,12 @@ signals:
     void waitForRival();
     void winGame();
     void loseGame();
-    void modifyPlayerMoney(int);
+    void modify_player_money(int);
+    void rival_die();
 
 public slots:
     void cleanUp();
+    void reject();
 
 private slots:
     void submitAnswer();
@@ -41,6 +46,7 @@ private slots:
 
 private:
 
+    void initialize();
     void setMagicNumber();
     void setUpDisplay();
     void setGuessResult(int resultA, int resultB );

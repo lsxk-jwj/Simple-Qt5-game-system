@@ -12,12 +12,12 @@ MAKEFILE      = Makefile
 
 CC            = gcc
 CXX           = g++
-DEFINES       = -DQT_NO_DEBUG -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_CORE_LIB
-CFLAGS        = -m64 -pipe -O2 -Wall -W -D_REENTRANT -fPIE $(DEFINES)
-CXXFLAGS      = -m64 -pipe -O2 -std=c++0x -Wall -W -D_REENTRANT -fPIE $(DEFINES)
+DEFINES       = -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_CORE_LIB
+CFLAGS        = -m64 -pipe -g -Wall -W -D_REENTRANT -fPIE $(DEFINES)
+CXXFLAGS      = -m64 -pipe -g -std=c++0x -Wall -W -D_REENTRANT -fPIE $(DEFINES)
 INCPATH       = -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++-64 -I. -I../lib/protobuf-2.6.1/src/.libs -I../lib -I../model/build -I/usr/include/qt5 -I/usr/include/qt5/QtWidgets -I/usr/include/qt5/QtGui -I/usr/include/qt5/QtCore -I../build/bin/client -I.
 LINK          = g++
-LFLAGS        = -m64 -Wl,-O1
+LFLAGS        = -m64
 LIBS          = $(SUBLIBS) -L/usr/X11R6/lib64 -L../lib/protobuf-2.6.1/src/.libs/ -lprotoc -lprotobuf -lQt5Widgets -L/usr/lib/x86_64-linux-gnu -lQt5Gui -lQt5Core -lGL -lpthread 
 AR            = ar cqs
 RANLIB        = 
@@ -177,6 +177,7 @@ all: Makefile $(TARGET)
 $(TARGET): ../lib/protobuf-2.6.1/src/.libs/libprotoc.a ui_mainwindow.h ui_configureserverdialog.h ui_guessnum.h ui_blackjack.h ui_changename.h ui_blackjackresultdialog.h $(OBJECTS)  
 	@test -d ../build/ || mkdir -p ../build/
 	$(LINK) $(LFLAGS) -o $(TARGET) $(OBJECTS) $(OBJCOMP) $(LIBS)
+	{ test -n "$(DESTDIR)" && DESTDIR="$(DESTDIR)" || DESTDIR=.; } && test $$(gdb --version | sed -e 's,[^0-9][^0-9]*\([0-9]\)\.\([0-9]\).*,\1\2,;q') -gt 72 && gdb --nx --batch --quiet -ex 'set confirm off' -ex "save gdb-index $$DESTDIR" -ex quit '$(TARGET)' && test -f $(TARGET).gdb-index && objcopy --add-section '.gdb_index=$(TARGET).gdb-index' --set-section-flags '.gdb_index=readonly' '$(TARGET)' '$(TARGET)' && rm -f $(TARGET).gdb-index || true
 
 Makefile: gameSystem.pro /usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++-64/qmake.conf /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/common/shell-unix.conf \
@@ -458,6 +459,7 @@ compiler_moc_header_clean:
 		/usr/include/qt5/QtWidgets/QLabel \
 		/usr/include/qt5/QtWidgets/qlabel.h \
 		/usr/include/qt5/QtWidgets/qframe.h \
+		/usr/include/qt5/QtGui/QCloseEvent \
 		/usr/include/qt5/QtWidgets/QMainWindow \
 		/usr/include/qt5/QtWidgets/qmainwindow.h \
 		/usr/include/qt5/QtWidgets/qtabwidget.h \
@@ -491,12 +493,12 @@ compiler_moc_header_clean:
 		/usr/include/qt5/QtGui/qpen.h \
 		/usr/include/qt5/QtGui/qtextoption.h \
 		/usr/include/qt5/QtCore/QThread \
+		config.h \
 		blackjack.h \
 		/usr/include/qt5/QtWidgets/QGridLayout \
 		/usr/include/qt5/QtWidgets/QRadioButton \
 		/usr/include/qt5/QtWidgets/qradiobutton.h \
 		blackjackresultdialog.h \
-		config.h \
 		mainwindow.h
 	/usr/lib/x86_64-linux-gnu/qt5/bin/moc $(DEFINES) $(INCPATH) -I/usr/include/c++/4.8 -I/usr/include/x86_64-linux-gnu/c++/4.8 -I/usr/include/c++/4.8/backward -I/usr/lib/gcc/x86_64-linux-gnu/4.8/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/4.8/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include mainwindow.h -o ../build/bin/client/moc_mainwindow.cpp
 
@@ -758,6 +760,7 @@ compiler_moc_header_clean:
 		../model/build/system.model.pb.h \
 		../model/build/guess.model.pb.h \
 		../lib/connection.hpp \
+		config.h \
 		guessnum.h
 	/usr/lib/x86_64-linux-gnu/qt5/bin/moc $(DEFINES) $(INCPATH) -I/usr/include/c++/4.8 -I/usr/include/x86_64-linux-gnu/c++/4.8 -I/usr/include/c++/4.8/backward -I/usr/lib/gcc/x86_64-linux-gnu/4.8/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/4.8/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include guessnum.h -o ../build/bin/client/moc_guessnum.cpp
 
@@ -887,6 +890,19 @@ compiler_moc_header_clean:
 		/usr/include/qt5/QtGui/qicon.h \
 		/usr/include/qt5/QtCore/QThread \
 		/usr/include/qt5/QtCore/qthread.h \
+		/usr/include/qt5/QtWidgets/QHBoxLayout \
+		request.h \
+		/usr/include/qt5/QtCore/QThreadPool \
+		/usr/include/qt5/QtCore/qthreadpool.h \
+		/usr/include/qt5/QtCore/qrunnable.h \
+		/usr/include/qt5/QtCore/QRunnable \
+		/usr/include/qt5/QtCore/QDebug \
+		../model/build/main.model.pb.h \
+		../model/build/jack.model.pb.h \
+		../model/build/system.model.pb.h \
+		../model/build/guess.model.pb.h \
+		../lib/connection.hpp \
+		config.h \
 		blackjack.h
 	/usr/lib/x86_64-linux-gnu/qt5/bin/moc $(DEFINES) $(INCPATH) -I/usr/include/c++/4.8 -I/usr/include/x86_64-linux-gnu/c++/4.8 -I/usr/include/c++/4.8/backward -I/usr/lib/gcc/x86_64-linux-gnu/4.8/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/4.8/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include blackjack.h -o ../build/bin/client/moc_blackjack.cpp
 
@@ -1216,6 +1232,18 @@ compiler_moc_header_clean:
 		/usr/include/qt5/QtGui/qicon.h \
 		/usr/include/qt5/QtCore/QThread \
 		/usr/include/qt5/QtCore/qthread.h \
+		/usr/include/qt5/QtWidgets/QHBoxLayout \
+		request.h \
+		/usr/include/qt5/QtCore/QThreadPool \
+		/usr/include/qt5/QtCore/qthreadpool.h \
+		/usr/include/qt5/QtCore/qrunnable.h \
+		/usr/include/qt5/QtCore/QRunnable \
+		/usr/include/qt5/QtCore/QDebug \
+		../model/build/main.model.pb.h \
+		../model/build/jack.model.pb.h \
+		../model/build/system.model.pb.h \
+		../model/build/guess.model.pb.h \
+		../lib/connection.hpp \
 		config.h \
 		blackjackresultdialog.h
 	/usr/lib/x86_64-linux-gnu/qt5/bin/moc $(DEFINES) $(INCPATH) -I/usr/include/c++/4.8 -I/usr/include/x86_64-linux-gnu/c++/4.8 -I/usr/include/c++/4.8/backward -I/usr/lib/gcc/x86_64-linux-gnu/4.8/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/4.8/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include blackjackresultdialog.h -o ../build/bin/client/moc_blackjackresultdialog.cpp
@@ -1374,6 +1402,7 @@ compiler_clean: compiler_moc_header_clean compiler_uic_clean
 		/usr/include/qt5/QtWidgets/QLabel \
 		/usr/include/qt5/QtWidgets/qlabel.h \
 		/usr/include/qt5/QtWidgets/qframe.h \
+		/usr/include/qt5/QtGui/QCloseEvent \
 		/usr/include/qt5/QtWidgets/QMainWindow \
 		/usr/include/qt5/QtWidgets/qmainwindow.h \
 		/usr/include/qt5/QtWidgets/qtabwidget.h \
@@ -1407,12 +1436,12 @@ compiler_clean: compiler_moc_header_clean compiler_uic_clean
 		/usr/include/qt5/QtGui/qpen.h \
 		/usr/include/qt5/QtGui/qtextoption.h \
 		/usr/include/qt5/QtCore/QThread \
+		config.h \
 		blackjack.h \
 		/usr/include/qt5/QtWidgets/QGridLayout \
 		/usr/include/qt5/QtWidgets/QRadioButton \
 		/usr/include/qt5/QtWidgets/qradiobutton.h \
 		blackjackresultdialog.h \
-		config.h \
 		/usr/include/qt5/QtWidgets/QApplication \
 		/usr/include/qt5/QtWidgets/qapplication.h \
 		/usr/include/qt5/QtCore/qcoreapplication.h \
@@ -1542,6 +1571,7 @@ compiler_clean: compiler_moc_header_clean compiler_uic_clean
 		/usr/include/qt5/QtWidgets/QLabel \
 		/usr/include/qt5/QtWidgets/qlabel.h \
 		/usr/include/qt5/QtWidgets/qframe.h \
+		/usr/include/qt5/QtGui/QCloseEvent \
 		/usr/include/qt5/QtWidgets/QMainWindow \
 		/usr/include/qt5/QtWidgets/qmainwindow.h \
 		/usr/include/qt5/QtWidgets/qtabwidget.h \
@@ -1575,12 +1605,12 @@ compiler_clean: compiler_moc_header_clean compiler_uic_clean
 		/usr/include/qt5/QtGui/qpen.h \
 		/usr/include/qt5/QtGui/qtextoption.h \
 		/usr/include/qt5/QtCore/QThread \
+		config.h \
 		blackjack.h \
 		/usr/include/qt5/QtWidgets/QGridLayout \
 		/usr/include/qt5/QtWidgets/QRadioButton \
 		/usr/include/qt5/QtWidgets/qradiobutton.h \
 		blackjackresultdialog.h \
-		config.h \
 		configureserverdialog.h \
 		ui_mainwindow.h \
 		/usr/include/qt5/QtCore/QVariant \
@@ -1926,6 +1956,7 @@ compiler_clean: compiler_moc_header_clean compiler_uic_clean
 		../model/build/system.model.pb.h \
 		../model/build/guess.model.pb.h \
 		../lib/connection.hpp \
+		config.h \
 		ui_guessnum.h \
 		/usr/include/qt5/QtCore/QVariant \
 		/usr/include/qt5/QtWidgets/QAction \
@@ -1958,8 +1989,7 @@ compiler_clean: compiler_moc_header_clean compiler_uic_clean
 		/usr/include/qt5/QtWidgets/qtabbar.h \
 		/usr/include/qt5/QtWidgets/qtabwidget.h \
 		/usr/include/qt5/QtWidgets/qrubberband.h \
-		/usr/include/qt5/QtWidgets/QWidget \
-		config.h
+		/usr/include/qt5/QtWidgets/QWidget
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o ../build/bin/client/guessnum.o guessnum.cpp
 
 ../build/bin/client/blackjack.o: blackjack.cpp blackjack.h \
@@ -2089,6 +2119,19 @@ compiler_clean: compiler_moc_header_clean compiler_uic_clean
 		/usr/include/qt5/QtGui/qicon.h \
 		/usr/include/qt5/QtCore/QThread \
 		/usr/include/qt5/QtCore/qthread.h \
+		/usr/include/qt5/QtWidgets/QHBoxLayout \
+		request.h \
+		/usr/include/qt5/QtCore/QThreadPool \
+		/usr/include/qt5/QtCore/qthreadpool.h \
+		/usr/include/qt5/QtCore/qrunnable.h \
+		/usr/include/qt5/QtCore/QRunnable \
+		/usr/include/qt5/QtCore/QDebug \
+		../model/build/main.model.pb.h \
+		../model/build/jack.model.pb.h \
+		../model/build/system.model.pb.h \
+		../model/build/guess.model.pb.h \
+		../lib/connection.hpp \
+		config.h \
 		ui_blackjack.h \
 		/usr/include/qt5/QtCore/QVariant \
 		/usr/include/qt5/QtWidgets/QAction \
@@ -2106,7 +2149,6 @@ compiler_clean: compiler_moc_header_clean compiler_uic_clean
 		/usr/include/qt5/QtWidgets/QFrame \
 		/usr/include/qt5/QtWidgets/QGroupBox \
 		/usr/include/qt5/QtWidgets/qgroupbox.h \
-		/usr/include/qt5/QtWidgets/QHBoxLayout \
 		/usr/include/qt5/QtWidgets/QHeaderView \
 		/usr/include/qt5/QtWidgets/qheaderview.h \
 		/usr/include/qt5/QtWidgets/qabstractitemview.h \
@@ -2126,19 +2168,7 @@ compiler_clean: compiler_moc_header_clean compiler_uic_clean
 		/usr/include/qt5/QtWidgets/qrubberband.h \
 		/usr/include/qt5/QtWidgets/QPushButton \
 		/usr/include/qt5/QtWidgets/qpushbutton.h \
-		/usr/include/qt5/QtWidgets/QWidget \
-		request.h \
-		/usr/include/qt5/QtCore/QThreadPool \
-		/usr/include/qt5/QtCore/qthreadpool.h \
-		/usr/include/qt5/QtCore/qrunnable.h \
-		/usr/include/qt5/QtCore/QRunnable \
-		/usr/include/qt5/QtCore/QDebug \
-		../model/build/main.model.pb.h \
-		../model/build/jack.model.pb.h \
-		../model/build/system.model.pb.h \
-		../model/build/guess.model.pb.h \
-		../lib/connection.hpp \
-		config.h
+		/usr/include/qt5/QtWidgets/QWidget
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o ../build/bin/client/blackjack.o blackjack.cpp
 
 ../build/bin/client/connection.o: ../lib/connection.cpp ../lib/connection.hpp
@@ -2531,6 +2561,18 @@ compiler_clean: compiler_moc_header_clean compiler_uic_clean
 		/usr/include/qt5/QtGui/qicon.h \
 		/usr/include/qt5/QtCore/QThread \
 		/usr/include/qt5/QtCore/qthread.h \
+		/usr/include/qt5/QtWidgets/QHBoxLayout \
+		request.h \
+		/usr/include/qt5/QtCore/QThreadPool \
+		/usr/include/qt5/QtCore/qthreadpool.h \
+		/usr/include/qt5/QtCore/qrunnable.h \
+		/usr/include/qt5/QtCore/QRunnable \
+		/usr/include/qt5/QtCore/QDebug \
+		../model/build/main.model.pb.h \
+		../model/build/jack.model.pb.h \
+		../model/build/system.model.pb.h \
+		../model/build/guess.model.pb.h \
+		../lib/connection.hpp \
 		config.h \
 		ui_blackjackresultdialog.h \
 		/usr/include/qt5/QtCore/QVariant \

@@ -34,18 +34,21 @@ public:
     }
 
     bool do_operation( System::Request::Operation op, System::User& current_user, System::User* response_user );
+    void kick_off( System::User& user );
 
 private:
 
     int generate_room_id();
     bool get_rival_name( GameRoom* room, int user_id, System::User* rival );
     bool get_rival_meta( GameRoom* room, int user_id, System::User* rival );
+    bool check_rival_finish( GameRoom* room, int user_id, System::User* rival );
     bool check_game_ready( GameRoom* room );
-    bool check_rival_finish( GameRoom* room, int user_id );
     bool add_player( System::User& current_user );
-    bool quit_room( int room_id );
+    bool quit_room( int room_id, int id );
+    bool quit_wait_rival( int room_id );
 
 protected:
+    bool room_exist( int room_id );
     virtual void initialize( int room_id ) = 0;
 
 };

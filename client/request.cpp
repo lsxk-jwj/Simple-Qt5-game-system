@@ -46,7 +46,7 @@ void Request::system( System::Request::Operation op, Callback callback ){
 }
 void Request::setUp(int _socket){
     socket = _socket;
-    processor.setMaxThreadCount(10);
+    processor.setMaxThreadCount(15);
 }
 
 void Request::registerRequest( Model::Request* req, Callback callback ){
@@ -54,7 +54,7 @@ void Request::registerRequest( Model::Request* req, Callback callback ){
     QObject::connect(worker, &RequestProcessor::receive_done,
         [=]( Model::Reply* reply){
             callback(reply);
-            delete reply;
+            if( reply ) delete reply;
         }
     );
     QObject::connect(worker, &RequestProcessor::receive_fail, this, &Request::receive_fail );
@@ -79,12 +79,12 @@ void RequestProcessor::run()
     if( !Connection::send_message(socket, *request) ){
         qDebug() << "Sending: error or timeout\n";
 
+        delete request;
         emit send_fail();
         return;
     }
-    else{
-        delete request;
-    }
+
+    delete request;
 
     if( Connection::receive_message(socket, *reply) ){    
         emit receive_done(reply);

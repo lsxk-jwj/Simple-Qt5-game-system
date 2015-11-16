@@ -1,6 +1,6 @@
 #include "guessnum.h"
 #include "ui_guessnum.h"
-#include "config.h"
+
 
 #define UPDATE_FREQUENCY 3000
 
@@ -28,21 +28,32 @@ GuessNumClient::GuessNumClient(QWidget *parent) :
 
 GuessNumClient::~GuessNumClient()
 {
-    delete ui; 
-}
-void GuessNumClient::cleanUp(){
-    updator->stop();
-    waitRivalTimer->stop();
-
     for( int i = 0 ; i < 4; ++i){
         delete magic_numbers[i];
         delete guess_numbers[i];
     }
+    delete ui; 
     delete updator;
     delete waitRivalTimer;
 }
+void GuessNumClient::cleanUp(){
+    updator->stop();
+    waitRivalTimer->stop(); 
+}
+void GuessNumClient::initialize(){
+    round = 0;
+    ui->result->setText("None");
+    ui->round->setNum(0);
+    ui->RivalRound->setNum(0);
+    for( int i = 0; i < 4; ++i ){
+        magic_numbers[i]->setText("?");
+        guess_numbers[i]->setText("");
+    }
+}
 
 void GuessNumClient::start(){
+
+    initialize();
     request.system( System::Request_Operation_RivalName, [this](Model::Reply* reply){
         qDebug() << "Got rival name: " << QString::fromStdString( reply->system().user().name() );
         ui->RivalName->setText(QString::fromStdString( reply->system().user().name() ));
@@ -54,7 +65,7 @@ void GuessNumClient::start(){
 void GuessNumClient::setUpDisplay(){
 
     for( int i = 0 ; i < 4; ++i ){
-        QLabel* magic_num = new QLabel("?");
+        QLabel* magic_num = new QLabel();
         magic_num->setAlignment(Qt::AlignCenter);
         magic_num->setStyleSheet("border: 1px solid grey;"
                                  "font-size: 30px; line-height: 45px"
@@ -132,6 +143,10 @@ void GuessNumClient::setGuessResult(int resultA, int resultB ){
 }
 void GuessNumClient::checkRivalFinish(){
     request.system( System::Request_Operation_CheckFinish, [this](Model::Reply* reply){
+        if( reply->system().user().dead() ){
+            emit rival_die();
+            return;
+        }
         if(reply->status()){
             emit winGame();
             you_winGame();
@@ -150,6 +165,10 @@ void GuessNumClient::setMagicNumber(){
 void GuessNumClient::update(){
     request.system( System::Request_Operation_RivalMeta, [this](Model::Reply* reply){
         qDebug() << "Got rival meta";
+        if( reply->system().user().dead() ){
+            emit rival_die();
+            return;
+        }
         ui->RivalRound->setText(QString::number(reply->system().user().meta().guess_num().round()));
     });
 }
@@ -170,10 +189,19 @@ void GuessNumClient::you_winGame(){
     QThread::msleep(2000);
 
     // You earn these money.  Balanced in main window
-    emit modifyPlayerMoney( 2 * Config::GuessNumBet );
+    emit modify_player_money( 2 * Config::GuessNumBet );
 
     request.system( System::Request_Operation_QuitRoom, [this](Model::Reply* reply){
         this->done(QDialog::Accepted);
+    });
+
+}
+// This function is triggered when user close the window
+void GuessNumClient::reject()
+{
+    qDebug() << "Closing the window.  Quitting game";
+    request.system( System::Request_Operation_QuitRoom, [this](Model::Reply* reply){
+        QDialog::reject();
     });
 
 }

@@ -7,6 +7,7 @@
 #include <QMessageBox>
 #include <QDialog>
 #include <QLabel>
+#include <QCloseEvent>
 #include <QMainWindow>
 #include "connection.hpp"
 #include "main.model.pb.h"
@@ -36,12 +37,15 @@ private slots:
     void checkReady();
     void keepAlivePokeServer();
     void increaseMoney(int amount);
+    void handleGuessNumPlayerDie();
+    void handleBlackJackPlayerDie();
 
 signals:
     void connectionInvalid();
 
 private:
 
+    void closeEvent(QCloseEvent *event);
     void initializeWaitDialog();
     void initializeGuessNumDialogs();
     void initializeBlackjackDialogs();
@@ -71,7 +75,7 @@ private:
     QMessageBox* guessnum_congrat;
     QMessageBox* guessnum_loser;
     QMessageBox* guessnum_winner;
-
+    QMessageBox* blackjack_wait;
     // Dialogs for Blackjack
 };
 

@@ -2,9 +2,23 @@
 #include "blackjack.hpp"
 
 BlackJackServer::BlackJackServer( int roomNum ,int playerNum ):GamePrototype(roomNum, playerNum){
+#if defined ( DEBUG_SAME )
+    for( int i = 0 ; i < 52; ++i ){
+        cards[i] = 9;
+    }
+#elif defined ( DEBUG_CARD )
+    int a[] = {10,11,12,13,24,25,26};
+    int len = sizeof(a)/sizeof(int);
+    int t = 0;
+    for( int i = 0 ; i < 52; ++i ){
+        cards[i] = a[t];
+        t = (t+1)%len;
+    }
+#else
     for( int i = 0 ; i < 52; ++i ){
         cards[i] = i+1;
     }
+#endif
 }
 
 bool BlackJackServer::handle_req( System::User& user, const BlackJack::Request& req, BlackJack::Reply* res ){
@@ -12,7 +26,7 @@ bool BlackJackServer::handle_req( System::User& user, const BlackJack::Request& 
     GameRoom* room;
 
     mutex.lock();
-    if( rooms_in_game.find( user.room_id() ) != rooms_in_game.end() ){
+    if( room_exist(user.room_id()) ){
         room = rooms_in_game[ user.room_id() ];
         mutex.unlock();
     }
@@ -45,8 +59,8 @@ bool BlackJackServer::handle_req( System::User& user, const BlackJack::Request& 
 
 bool BlackJackServer::command_update( GameRoom* room, int id, BlackJack::Reply* res ){
     id = ( id == 0 ) ? 1 : 0; // Rival id
+    res->set_dead( room->is_dead( id ) );
     room->update_player_meta( id, [=]( System::Meta* meta ){
-        std::cerr << "Checking rival cards size: " << meta->blackjack().cards1_size();
         res->set_count( meta->blackjack().cards1_size() );
     });
     return true;
@@ -111,7 +125,13 @@ bool BlackJackServer::command_get_dealer_deck( GameRoom* room, int id, BlackJack
 }
 
 bool BlackJackServer::command_set_finish( bool cards2_the_best, GameRoom* room, int id, BlackJack::Reply* res ){
-    room->set_finished(true);
+    
+    if( cards2_the_best )
+        std::cerr << "Setting cards 2 as best\n";
+    else
+        std::cerr << "Setting cards 1 as best\n";
+
+    room->set_finished(id);
     room->update_player_meta( id, [=]( System::Meta* meta ){
         meta->mutable_blackjack()->set_cards2_the_best( cards2_the_best );
     });
@@ -142,7 +162,7 @@ void BlackJackServer::initialize( int room_id ){
     std::cerr << "Room " << room_id << " blackjack initialized:\n";
 
     int card, card_value, aceCount = 0, sum = 0;
-    while( sum < 17 && sum + 9*aceCount < 17 ){ // Dealer should stop when he got more than 17
+    while( sum < 17 && sum + 10*aceCount < 17 ){ // Dealer should stop when he got more than 17
 
         card = deal(); card_value = value( card );
         if( sum + card_value > 21 ){

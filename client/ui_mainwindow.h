@@ -50,7 +50,9 @@ public:
     QHBoxLayout *horizontalLayout_7;
     QLabel *label_7;
     QLabel *BlackJackBet;
+    QLabel *label_4;
     QSpacerItem *verticalSpacer;
+    QSpacerItem *verticalSpacer_8;
     QSpacerItem *verticalSpacer_2;
     QVBoxLayout *verticalLayout_2;
     QHBoxLayout *horizontalLayout_2;
@@ -207,16 +209,29 @@ public:
         BlackJackBet = new QLabel(layoutWidget);
         BlackJackBet->setObjectName(QStringLiteral("BlackJackBet"));
         BlackJackBet->setFont(font5);
-        BlackJackBet->setAlignment(Qt::AlignCenter);
+        BlackJackBet->setAlignment(Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter);
 
-        horizontalLayout_7->addWidget(BlackJackBet, 0, Qt::AlignLeft);
+        horizontalLayout_7->addWidget(BlackJackBet);
 
 
         board->addLayout(horizontalLayout_7);
 
+        label_4 = new QLabel(layoutWidget);
+        label_4->setObjectName(QStringLiteral("label_4"));
+        QFont font6;
+        font6.setPointSize(12);
+        label_4->setFont(font6);
+        label_4->setAlignment(Qt::AlignCenter);
+
+        board->addWidget(label_4);
+
         verticalSpacer = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
 
         board->addItem(verticalSpacer);
+
+        verticalSpacer_8 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+
+        board->addItem(verticalSpacer_8);
 
         verticalSpacer_2 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
 
@@ -302,6 +317,7 @@ public:
         BlackJackButton->setText(QApplication::translate("MainWindow", "BlackJack", 0));
         label_7->setText(QApplication::translate("MainWindow", "Bet:", 0));
         BlackJackBet->setText(QApplication::translate("MainWindow", "3000", 0));
+        label_4->setText(QApplication::translate("MainWindow", "( Half for dealer, half for rival )", 0));
         label->setText(QApplication::translate("MainWindow", "Server IP:   ", 0));
         serverIPDisplay->setText(QApplication::translate("MainWindow", "127.0.1.1", 0));
         label_3->setText(QApplication::translate("MainWindow", "Server port:   ", 0));

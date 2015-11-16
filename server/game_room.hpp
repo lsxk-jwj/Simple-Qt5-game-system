@@ -31,9 +31,11 @@ public:
 
     bool is_full();
 
-    bool get_rival_meta( int user_id, System::User* rival );
+    bool is_dead( int id );
 
-    bool get_rival_name( int user_id, System::User* rival );
+    bool get_player_meta( int user_id, System::User* rival );
+
+    bool get_player_name( int user_id, System::User* rival );
 
     bool check_finish( int id );
 
@@ -45,7 +47,7 @@ public:
 
     void set_player_meta( int id, System::Meta&& meta );
 
-    const System::Meta& get_player_meta( int id );
+    void set_died( int id );
 
     void update_player_meta( int id, std::function<void(System::Meta* meta)> update_function );
 

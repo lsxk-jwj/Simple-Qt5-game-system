@@ -1,7 +1,6 @@
 #include "blackjack.h"
 #include "ui_blackjack.h"
-#include "request.h"
-#include "config.h"
+
 
 extern Request request;
 
@@ -11,10 +10,19 @@ BlackJackClient::BlackJackClient(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    setUpPokerMapping();
+    set_up_poker_mapping();
 
     // Register custom type so QObject::connect can work
     qRegisterMetaType<WhichDeck>("WhichDeck");
+
+    decks[WhichDeck::DECK1].deck = ui->deck1;
+    decks[WhichDeck::DECK2].deck = ui->deck2;
+    decks[WhichDeck::RIVAL].deck = ui->rivalCards;
+    decks[WhichDeck::DEALER].deck = ui->dealerCards;
+
+    // Add stretch to decks so they can be left-aligned and remain fix-width.
+    for( int i = 0 ; i < WhichDeck::DECK_CNT; ++i )
+        decks[i].deck->addStretch(1);
 
     // Repeatedly update rival deck configuration
     updator = new QTimer;
@@ -23,51 +31,68 @@ BlackJackClient::BlackJackClient(QWidget *parent) :
 
     waitRivalTimer = new QTimer;
     waitRivalTimer->setInterval(Config::CheckRivalFinishFrequency);
-    connect(waitRivalTimer,SIGNAL(timeout()),this,SLOT(checkRivalFinish()));
+    connect(waitRivalTimer,SIGNAL(timeout()),this,SLOT(check_rival_finish()));
 
+    QObject::connect(ui->hitButton,   SIGNAL(clicked()),                    this, SLOT(command_hit()));
+    QObject::connect(ui->standButton, SIGNAL(clicked()),                    this, SLOT(command_stand()));
+    QObject::connect(ui->splitButton, SIGNAL(clicked()),                    this, SLOT(command_split()));
+    QObject::connect(ui->dealButton,  SIGNAL(clicked()),                    this, SLOT(command_deal()));
+    QObject::connect(ui->chooseDeck1, &QRadioButton::clicked,               [this](){ qDebug() << "Change deck to deck1"; current_deck = WhichDeck::DECK1; } );
+    QObject::connect(ui->chooseDeck2, &QRadioButton::clicked,               [this](){ qDebug() << "Change deck to deck2"; current_deck = WhichDeck::DECK2; } );
+    QObject::connect(this,            SIGNAL(insert_card_request(WhichDeck, int, bool)), this, SLOT(insert_card(WhichDeck, int, bool)));
+    QObject::connect(this,            SIGNAL(got_rival_deck()), this, SLOT(compare_all_decks()));
+}
+
+BlackJackClient::~BlackJackClient()
+{
+    delete ui;
+    delete updator;
+    delete waitRivalTimer;
+}
+void BlackJackClient::cleanUp(){
+    qDebug() << "Game finished!  Clean up!!";
+    updator->stop();
+    waitRivalTimer->stop();
+
+    for( int i = 0; i < WhichDeck::DECK_CNT; ++i ){
+        int cnt = decks[i].cards.size();
+        while( cnt-- )
+            pop_card((WhichDeck)i);
+    }
+
+}
+void BlackJackClient::initialize(){
+
+    qDebug() << "Initializing blackjack";
+
+    current_deck = WhichDeck::DECK1;
 
     // The user cannot do anything before making his first deal
     ui->dealButton->setDefault(true);
+    ui->dealButton->setDisabled(false);
     ui->splitButton->setDisabled(true);
     ui->standButton->setDisabled(true);
     ui->hitButton->setDisabled(true);
 
     // Initialize which deck the user acts upon
     ui->chooseDeck1->setChecked(true);
+    ui->chooseDeck1->setDisabled(false);
     ui->chooseDeck2->setDisabled(true);
 
-    // Add stretch to decks so they can be left-aligned and remain fix-width.
-    ui->deck1->addStretch(1);
-    ui->deck2->addStretch(1);
-    ui->rivalCards->addStretch(1);
-    ui->dealerCards->addStretch(1);
+    ui->deck1_status->setText("");
+    ui->deck2_status->setText("");
 
-    current_deck = WhichDeck::DECK1;
-
-    QObject::connect(waitRivalTimer,  SIGNAL(timeout()),                    this,SLOT(checkRivalFinish()));
-    QObject::connect(ui->hitButton,   SIGNAL(clicked()),                    this, SLOT(command_hit()));
-    QObject::connect(ui->standButton, SIGNAL(clicked()),                    this, SLOT(command_stand()));
-    QObject::connect(ui->splitButton, SIGNAL(clicked()),                    this, SLOT(command_split()));
-    QObject::connect(ui->dealButton,  SIGNAL(clicked()),                    this, SLOT(command_deal()));
-    QObject::connect(ui->chooseDeck1, &QRadioButton::clicked,               [this](){ current_deck = WhichDeck::DECK1; } );
-    QObject::connect(ui->chooseDeck2, &QRadioButton::clicked,               [this](){ current_deck = WhichDeck::DECK2; } );
-    QObject::connect(this,            SIGNAL(insert_card_request(WhichDeck, int, bool)), this, SLOT(insert_card(WhichDeck, int, bool)));
+    for( int i = 0; i < WhichDeck::DECK_CNT; ++i ){
+        decks[i].initialize();
+    }
 }
 
-BlackJackClient::~BlackJackClient()
-{ 
-    delete ui;
-}
-void BlackJackClient::cleanUp(){
-    updator->stop();
-    waitRivalTimer->stop();
-    delete updator;
-    delete waitRivalTimer;
-}
 void BlackJackClient::start(){
+
+    initialize();
     request.system( System::Request_Operation_RivalName, [this](Model::Reply* reply){
         ui->RivalName->setText(QString::fromStdString( reply->system().user().name() ));
-        getDealerCards();
+        get_dealer_cards();
         updator->start();
         this->exec();
     });
@@ -76,23 +101,24 @@ void BlackJackClient::command_split(){
     ui->chooseDeck2->setDisabled(false);
 
     // Move the first card from deck1 to deck2
-    pop_card(WhichDeck::DECK1);
     insert_card(WhichDeck::DECK2, decks[DECK1].cards.back());
-    decks[DECK1].pop();
+    pop_card(WhichDeck::DECK1);
 
     request.blackjack( BlackJack::SPLIT, [](Model::Reply* reply){});
 
 }
 void BlackJackClient::command_stand(){
+    decks[ current_deck ].done = true;
+
     if( current_deck == WhichDeck::DECK1 ){
         ui->chooseDeck1->setDisabled(true);
-        if( !ui->chooseDeck2->isEnabled() )
-            youAreDone(get_your_best_deck());
+        if( decks[DECK2].done || !ui->chooseDeck2->isEnabled() )
+            you_are_done(get_your_best_deck());
     }
     else{
-        ui->chooseDeck1->setDisabled(true);
-        if( !ui->chooseDeck1->isEnabled() )
-            youAreDone(get_your_best_deck());
+        ui->chooseDeck2->setDisabled(true);
+        if( decks[DECK1].done || !ui->chooseDeck1->isEnabled() )
+            you_are_done(get_your_best_deck());
     }
 }
 void BlackJackClient::command_hit(){
@@ -106,11 +132,20 @@ void BlackJackClient::command_hit(){
     bool acted_on_deck2 = current_deck == WhichDeck::DECK2;
     request.blackjack_hit( acted_on_deck2, [this](Model::Reply* reply){
         int card = reply->blackjack().card1();
-        qDebug() << "Got hit: " << QString::number(card) ;
+        qDebug() << "asking hit: " << QString::number(card) ;
         emit insert_card_request(current_deck, card);
     });
 }
 void BlackJackClient::command_deal(){
+    request.blackjack( BlackJack::DEAL, [this](Model::Reply* reply){
+        int card1 = reply->blackjack().card1(), card2 = reply->blackjack().card2();
+        emit insert_card_request(current_deck, card1);
+        emit insert_card_request(current_deck, card2);
+        if( same_card_type(card1,card2) ){
+            // Enable the player to split
+            ui->splitButton->setDisabled(false);
+        }
+    });
 
     // The deal button is only used for the first deal
     ui->dealButton->setDisabled(true);
@@ -119,23 +154,10 @@ void BlackJackClient::command_deal(){
 
     // Player can repeatedly issue "hit" from now on
     ui->hitButton->setDefault(true);
-
-    qDebug() << "Asking for the first deals";
-    request.blackjack( BlackJack::DEAL, [this](Model::Reply* reply){
-        int card1 = reply->blackjack().card1(), card2 = reply->blackjack().card2();
-        emit insert_card_request(current_deck, card1);
-        emit insert_card_request(current_deck, card2);
-        if( card_value(card1) == card_value(card2) ){
-            // Enable the player to split
-            ui->splitButton->setDisabled(false);
-        }
-    });
-
 }
 
-void BlackJackClient::getDealerCards(){
-    request.blackjack( BlackJack::GET_RIVAL_DECK, [this](Model::Reply* reply){
-        qDebug() << "Got dealer status ";
+void BlackJackClient::get_dealer_cards(){
+    request.blackjack( BlackJack::GET_DEALER_DECK, [this](Model::Reply* reply){
         const auto& r = reply->blackjack();
         int size = r.cards_size();
         for( int i = 0; i < size ; ++i ){
@@ -144,112 +166,138 @@ void BlackJackClient::getDealerCards(){
 
     });
 }
-void BlackJackClient::youAreDone(WhichDeck yourBestDeck){
+void BlackJackClient::you_are_done(WhichDeck yourBestDeck){
+
+    ui->splitButton->setDisabled(true);
+    ui->standButton->setDisabled(true);
+    ui->hitButton->setDisabled(true);
 
     // Tell backend your result
     bool deck2_the_best = ( yourBestDeck == WhichDeck::DECK2 );
-    request.blackjack_set_finish( deck2_the_best, [this](Model::Reply* reply){});
+    request.blackjack_set_finish( deck2_the_best, [](Model::Reply* reply){});
 
-    QThread::sleep(2000);
+    qDebug() << "Checking if rival has done";
 
     // Check whether your rival has done
     request.system( System::Request_Operation_CheckFinish, [this](Model::Reply* reply){
         if(reply->status()){
             // Your rival has already done, so let's announce the result!
-            gameFinish();
+            qDebug() << "Your rival has done";
+            game_finish();
         }
         else{
             // You are done before your rival!  Now wait for your rival.
+            qDebug() << "Your rival has not done";
+            emit waitForRival();
             waitRivalTimer->start();
         }
 
         updator->stop();
     });
 }
-void BlackJackClient::gameFinish(){
+void BlackJackClient::game_finish(){
 
+    // Fetch rival's cards
     request.blackjack( BlackJack::GET_RIVAL_DECK, [this](Model::Reply* reply){
-        auto yourBest = get_your_best_deck();
-        const auto & b = reply->blackjack();
-        int cnt = decks[RIVAL].cards.size();
 
-        /* Remove all the place-holder cards */
+        const auto & b = reply->blackjack();
+
+        /* Remove all the place-holder masked cards */
+        int cnt = decks[RIVAL].cards.size();
         while( cnt-- )
             pop_card(WhichDeck::RIVAL);
 
         /* Update rival's cards to its final state */
-        for( int i = 0; i < b.cards_size(); ++i )
+
+        for( int i = 0; i < b.cards_size(); ++i ){
+            qDebug() << "Inserting rival card: " << b.cards(i);
             emit insert_card_request(WhichDeck::RIVAL, b.cards(i) );
+        }
 
-        // Compare your deck with dealer
-        int you_vs_dealer = compare_deck(yourBest, WhichDeck::DEALER);
-        // Compare your deck with your rival
-        int you_vs_rival = compare_deck(yourBest, WhichDeck::RIVAL);
-
-        // And show the result
-        emit showBlackjackResult( you_vs_dealer, you_vs_rival );
-
-        // Modify money
-        modifyMoney(you_vs_dealer);
-        modifyMoney(you_vs_rival);
+        emit got_rival_deck();
     });
 
+    // Display dealer's card
+    int cnt = decks[WhichDeck::DEALER].cards.size();
+    for( int i = 0; i < cnt; ++i ){
+        QLabel* card = (QLabel*) ui->dealerCards->itemAt(i)->widget();
+        card->setText(convert_card(decks[WhichDeck::DEALER].cards[i]));
+    }
 }
-void BlackJackClient::checkRivalFinish(){
+void BlackJackClient::compare_all_decks(){
+
+    auto yourBest = get_your_best_deck();
+
+    // Compare your deck with dealer
+    int you_vs_dealer = compare_deck(yourBest, WhichDeck::DEALER);
+    // Compare your deck with your rival
+    int you_vs_rival = compare_deck(yourBest, WhichDeck::RIVAL);
+
+    // And show the result
+    emit showBlackjackResult( you_vs_dealer, you_vs_rival );
+
+    // Modify money
+    modify_money(you_vs_dealer);
+    modify_money(you_vs_rival);
+}
+
+void BlackJackClient::check_rival_finish(){
     request.system( System::Request_Operation_CheckFinish, [this](Model::Reply* reply){
+        if( reply->system().user().dead() ){
+            emit rival_die();
+            return;
+        }
         if(reply->status()){
             // Your rival has finished
             waitRivalTimer->stop();
-            gameFinish();
+            game_finish();
         }
-    });
-}
-void BlackJackClient::update(){
-    request.blackjack( BlackJack::UPDATE, [this](Model::Reply* reply){
-        qDebug() << "Got rival meta";
-        if( reply->blackjack().has_count() ){
-            qDebug() << "Received rival size: " << QString::number(reply->blackjack().count());
-
-            int diff = reply->blackjack().count() - decks[RIVAL].cards.size() ;
-            for( int i = 0; i < diff; ++i )
-                emit insert_card_request(WhichDeck::RIVAL, 0, /*mask the card*/true );
-
+        else{
+            qDebug() << "Your rival not finished";
         }
     });
 }
 
-QString BlackJackClient::convert_card( int card_val ){
-    int mod = card_val%13, div = card_val/13;
-    return card_type_mapping[ mod == 0 ? div-1 : div ] + " " + card_val_mapping[ mod ];
-}
+
 void BlackJackClient::check_result(WhichDeck deckType){
     static const QString busted("<strong><font color=red>Busted!</font></strong>");
     static const QString blackjack("<strong><font color=green>Blackjack!</font></strong>");
 
     // If both decks are busted, the game is over.
+
     switch(deckType){
         case DECK1:
+            qDebug() << "Checking deck1 result";
             if( decks[DECK1].busted() ){
                 ui->deck1_status->setText(busted);
+                if( !ui->chooseDeck2->isEnabled() ){
+                    you_are_done(WhichDeck::DECK1);
+                    break;
+                }
                 if( decks[DECK2].done )
-                    youAreDone(WhichDeck::DECK2);
+                    you_are_done(WhichDeck::DECK2);
             }
             else if( decks[DECK1].blackjack() ){
                 ui->deck1_status->setText(blackjack);
-                youAreDone(WhichDeck::DECK1);
+                you_are_done(WhichDeck::DECK1);
             }
             break;
         case DECK2:
+            qDebug() << "Checking deck2 result";
             if( decks[DECK2].busted() ){
                 ui->deck2_status->setText(busted);
+                if( !ui->chooseDeck1->isEnabled() ){
+                    you_are_done(WhichDeck::DECK2);
+                    break;
+                }
                 if( decks[DECK1].done )
-                    youAreDone(WhichDeck::DECK1);
+                    you_are_done(WhichDeck::DECK1);
             }
             else if( decks[DECK2].blackjack() ){
                 ui->deck2_status->setText(blackjack);
-                youAreDone(WhichDeck::DECK2);
+                you_are_done(WhichDeck::DECK2);
             }
-            break;
+
     }
 }
 BlackJackClient::WhichDeck BlackJackClient::get_your_best_deck(){
@@ -258,20 +306,27 @@ BlackJackClient::WhichDeck BlackJackClient::get_your_best_deck(){
     else
         return WhichDeck::DECK2;
 }
-void BlackJackClient::modifyMoney(int result){
 
-    if( result > 0 )
-        emit modifyPlayerMoney( Config::BlackjackBet );
-    else if( result == 0 )
-        emit modifyPlayerMoney( 2 * Config::BlackjackBet );
-
-}
 
 int BlackJackClient::compare_deck(WhichDeck a, WhichDeck b){
-    if(decks[a].busted())
+
+    qDebug() << "Comparing two decks: ";
+
+    // If both are busted
+    if(decks[a].busted() && decks[b].busted() ){
+        qDebug() << "Both busted";
+        return 0;
+    }
+
+    // If only one deck is under consideration
+    if(decks[a].busted() && decks[b].has_card() ){
+        qDebug() << "The first deck busted";
         return -1;
-    if(decks[b].busted())
+    }
+    if(decks[b].busted() && decks[a].has_card() ){
+        qDebug() << "The second deck busted";
         return 1;
+    }
 
     int a_best = decks[a].best_score();
     int b_best = decks[b].best_score();
@@ -286,75 +341,89 @@ int BlackJackClient::compare_deck(WhichDeck a, WhichDeck b){
         bool a_blackjack = decks[a].blackjack(), b_blackjack = decks[b].blackjack();
         if( a_blackjack && !b_blackjack )
             return 1;
-        if( a_blackjack && !b_blackjack )
+        if( !a_blackjack && b_blackjack )
             return -1;
     }
 
     return 0;
 }
-void BlackJackClient::pop_card(WhichDeck deckType){
-    
-    decks[ deckType ].pop();
-
-    switch(deckType){
-        case RIVAL:
-            ui->rivalCards->removeWidget( ui->rivalCards->takeAt(0)->widget() );
-            break;
-        case DECK1:
-            ui->deck1->removeWidget( ui->deck1->takeAt(0)->widget() );
-            break;
-        case DEALER:
-            ui->dealerCards->removeWidget( ui->dealerCards->takeAt(0)->widget() );
-            break;
-    }
-}
-
 void BlackJackClient::insert_card(enum WhichDeck deckType, int value, bool masked ){
+    static QString style("font-size: 18px; font-weight: bold; border: 1px solid grey; text-align: center;");
+
     auto card = new QLabel;
     card->setAlignment(Qt::AlignCenter);
     card->setFixedSize(110, 60);
     card->setText(masked ? QString("?") : convert_card(value));
+    card->setStyleSheet(style);
+
+    decks[ deckType ].insert(value);
+    decks[ deckType ].deck->insertWidget(0, card);
 
     switch(deckType){
         case DECK1:
-            ui->deck1->insertWidget(0, card);
-            check_result(WhichDeck::DECK1);
-            break;
-        case RIVAL:
-            ui->rivalCards->insertWidget(0, card);
-            break;
         case DECK2:
-            ui->deck2->insertWidget(0, card);
-            check_result(WhichDeck::DECK2);
-            break;
-        case DEALER:
-            ui->dealerCards->insertWidget(0, card);
-            break;
+            check_result(deckType);
     }
+}
+void BlackJackClient::pop_card(WhichDeck deckType){
 
-    decks[ deckType ].insert(value);
+    decks[ deckType ].pop();
 
-    // Emphasizing the insertion of a new card.
-    mark_new_card(card);
+    QLayoutItem *card = decks[deckType].deck->takeAt(0);
+
+    if(card && card->widget()){
+        delete card->widget();
+        delete card;
+    }
 }
 
-
 void BlackJackClient::mark_new_card( QLabel* new_card ){
-    QString style("font-size: 18px; font-weight: bold; border: 1px solid grey; text-align: center;");
-    new_card->setStyleSheet( style + "background-color: rgb(255,208,127); border-width:2px;" );
+    static const QString style("font-size: 18px; font-weight: bold; border: 1px solid grey; text-align: center;");
+    static const QString tmp_style(style + "background-color: rgb(255,208,127); border-width:2px;");
 
-    QTimer *timer = new QTimer(this);
+    new_card->setStyleSheet(tmp_style);
+
+    QTimer *timer = new QTimer;
     timer->setSingleShot(true);
 
     QObject::connect(timer, &QTimer::timeout, [=]() {
         new_card->setStyleSheet(style);
         timer->deleteLater();
-      } );
+    } );
 
-    timer->start(1000);
+    timer->start(1500);
+
+}
+void BlackJackClient::update(){
+    request.blackjack( BlackJack::UPDATE, [this](Model::Reply* reply){
+        qDebug() << "Got rival meta";
+        if( reply->blackjack().dead() ){
+            emit rival_die();
+            return;
+        }
+        if( reply->blackjack().has_count() ){
+            qDebug() << "Received rival size: " << QString::number(reply->blackjack().count());
+
+            int diff = reply->blackjack().count() - decks[RIVAL].cards.size() ;
+            for( int i = 0; i < diff; ++i )
+                emit insert_card_request(WhichDeck::RIVAL, 0, /*mask the card*/true );
+        }
+    });
 }
 
-void BlackJackClient::setUpPokerMapping(){
+void BlackJackClient::modify_money(int result){
+
+    if( result > 0 )
+        emit modify_player_money( Config::BlackjackBet );
+    else if( result == 0 )
+        emit modify_player_money( Config::BlackjackBet / 2 );
+
+}
+QString BlackJackClient::convert_card( int card_val ){
+    int mod = card_val%13, div = card_val/13;
+    return card_type_mapping[ mod == 0 ? div-1 : div ] + " " + card_val_mapping[ mod ];
+}
+void BlackJackClient::set_up_poker_mapping(){
     card_type_mapping[0] = QString("Club");
     card_type_mapping[1] = QString("Diamond");
     card_type_mapping[2] = QString("Heart");
@@ -368,19 +437,29 @@ void BlackJackClient::setUpPokerMapping(){
 }
 
 bool DeckInfo::busted(){
-    if( point > 21 )
-        return done = true;
+    if( point > 21 ){
+        done = true;
+        return true;
+    }
     return false;
+}
+bool DeckInfo::has_card(){
+    return cards.size() > 0;
 }
 
 bool DeckInfo::blackjack(){
-    if( point == 11 && ace_cnt == 1 )
-        return done = true;
+    if( point == 11 && ace_cnt == 1 ){
+        done = true;
+        return true;
+    }
     return false;
 }
 
 void DeckInfo::insert(int value){
+    qDebug() << "Inserting card with index" << QString::number(value);
     value = BlackJackClient::card_value(value);
+    qDebug() << "and value " << QString::number(value);
+    qDebug() << "current value: " << point + value;
     point += value;
     cards.push_back(value);
     if(value == 1)
@@ -388,18 +467,29 @@ void DeckInfo::insert(int value){
 }
 void DeckInfo::pop(){
     int value = BlackJackClient::card_value(cards.back());
+    qDebug() << "Popping card with value: " << value;
+    qDebug() << "current value: " << point - value;
+    point -= value;
+
     if( value == 1 )
         --ace_cnt;
-    point -= value;
     cards.pop_back();
 }
 int DeckInfo::best_score(){
     int best_score = point;
-    for( int i = 0; i < ace_cnt; ++i, best_score += 9 )
-        if( best_score + 9 > 21 )
+    for( int i = 0; i < ace_cnt; ++i, best_score += 10 )
+        if( best_score + 10 > 21 )
             break;
 
     return best_score;
+}
+void DeckInfo::initialize(){
+    cards.clear();
+    ace_cnt = point = 0;
+    done = false;
+}
+bool BlackJackClient::same_card_type( int card1, int card2 ){
+    return (card1 % 13) == (card2 % 13);
 }
 int BlackJackClient::card_value( int card ){
 
@@ -407,4 +497,14 @@ int BlackJackClient::card_value( int card ){
     if( mod == 0 || mod > 10 ) /* J, Q, K */
         return 10;
     return mod;
+}
+
+// This function is triggered when user close the window
+void BlackJackClient::reject()
+{
+    qDebug() << "Closing the window.  Quitting game";
+    request.system( System::Request_Operation_QuitRoom, [this](Model::Reply* reply){
+        QDialog::reject();
+    });
+
 }

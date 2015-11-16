@@ -39,24 +39,31 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->BlackJackButton->setEnabled(false);
     ui->GuessNumButton->setEnabled(false);
 
-    QObject::connect(ui->ConfigureServerButton,     SIGNAL(clicked()),              this, SLOT(showServerConfigDialog()));
-    QObject::connect(ui->TryConnectionButton,       SIGNAL(clicked()),              this, SLOT(tryConnect()));
-    QObject::connect(this,                          SIGNAL(connectionInvalid()),    this, SLOT(warnConnection()));
-    QObject::connect(this->keepAlive,               SIGNAL(timeout()),              this, SLOT(keepAlivePokeServer()));
+    // Register custom type so QObject::connect can work
+    qRegisterMetaType<System::Type>("System::Type");
 
-    QObject::connect(this->guess_num_client,        SIGNAL(waitForRival()),         this->guessnum_congrat, SLOT(exec()));
-    QObject::connect(this->guess_num_client,        SIGNAL(loseGame()),             this->guessnum_loser, SLOT(exec()));
-    QObject::connect(this->guess_num_client,        SIGNAL(winGame()),              this->guessnum_winner, SLOT(exec()));
-    QObject::connect(this->guess_num_client,        SIGNAL(modifyPlayerMoney(int)), this, SLOT(increaseMoney(int)));
-    QObject::connect(this->guess_num_client,        SIGNAL(finished(int)),          this->guess_num_client, SLOT(cleanUp()));
+    QObject::connect(ui->ConfigureServerButton,     SIGNAL(clicked()),                 this, SLOT(showServerConfigDialog()));
+    QObject::connect(ui->TryConnectionButton,       SIGNAL(clicked()),                 this, SLOT(tryConnect()));
+    QObject::connect(this,                          SIGNAL(connectionInvalid()),       this, SLOT(warnConnection()));
+    QObject::connect(this->keepAlive,               SIGNAL(timeout()),                 this, SLOT(keepAlivePokeServer()));
 
-    QObject::connect(this->blackjack_client,        SIGNAL(modifyPlayerMoney(int)), this, SLOT(increaseMoney(int)));
+    QObject::connect(this->guess_num_client,        SIGNAL(waitForRival()),            this->guessnum_congrat, SLOT(exec()));
+    QObject::connect(this->guess_num_client,        SIGNAL(loseGame()),                this->guessnum_loser, SLOT(exec()));
+    QObject::connect(this->guess_num_client,        SIGNAL(winGame()),                 this->guessnum_winner, SLOT(exec()));
+    QObject::connect(this->guess_num_client,        SIGNAL(modify_player_money(int)),  this, SLOT(increaseMoney(int)));
+    QObject::connect(this->guess_num_client,        SIGNAL(finished(int)),             this->guess_num_client, SLOT(cleanUp()));
+
+    QObject::connect(this->blackjack_client,        SIGNAL(modify_player_money(int)),  this, SLOT(increaseMoney(int)));
+    QObject::connect(this->blackjack_client,        SIGNAL(waitForRival()),            this->blackjack_wait, SLOT(exec()));
     QObject::connect(this->blackjack_client,        SIGNAL(showBlackjackResult(int,int)), this->blackjack_result_dialog, SLOT(showResult(int,int)));
-    QObject::connect(this->blackjack_client,        SIGNAL(finished(int)),          this->blackjack_client, SLOT(cleanUp()));
-    QObject::connect(this->blackjack_result_dialog, SIGNAL(finished(int)),          this->blackjack_client, SLOT(accept()));
+    QObject::connect(this->blackjack_client,        SIGNAL(finished(int)),             this->blackjack_client, SLOT(cleanUp()));
 
-    QObject::connect(ui->GuessNumButton,            &QPushButton::clicked,          [this](){ joinGame(System::GUESSNUM); });
-    QObject::connect(ui->BlackJackButton,           &QPushButton::clicked,          [this](){ joinGame(System::JACK); });
+    QObject::connect(this->blackjack_result_dialog, SIGNAL(finished(int)),             this->blackjack_client, SLOT(accept()));
+
+    QObject::connect(ui->GuessNumButton,            &QPushButton::clicked,             [this](){ joinGame(System::GUESSNUM); });
+    QObject::connect(ui->BlackJackButton,           &QPushButton::clicked,             [this](){ joinGame(System::JACK); });
+    QObject::connect(this->guess_num_client,        SIGNAL(rival_die()),  this, SLOT(handleGuessNumPlayerDie()));
+    QObject::connect(this->blackjack_client,        SIGNAL(rival_die()),  this, SLOT(handleBlackJackPlayerDie()));
 
     // Prompt for change name at startup.
     changeName();
@@ -67,6 +74,7 @@ MainWindow::~MainWindow(){
     delete keepAlive;
     delete waitDialog;
     delete guessnum_loser; delete guessnum_winner; delete guessnum_congrat;
+    delete blackjack_wait; delete blackjack_result_dialog;
 }
 void MainWindow::initializeWaitDialog(){
     this->waitDialog = new QDialog(this);
@@ -84,6 +92,7 @@ void MainWindow::initializeGuessNumDialogs(){
     guessnum_loser = new QMessageBox(this);
     guessnum_winner = new QMessageBox(this);
     guessnum_congrat = new QMessageBox(this);
+    blackjack_wait = new QMessageBox(this);
     guessnum_loser->setText(
                        "<font size=18>"
                        "You're done! Unfortunately, your rival is one step further than you! <br/>"
@@ -102,9 +111,41 @@ void MainWindow::initializeGuessNumDialogs(){
                        "Please wait until your rival is done."
                        "</font>"
                 );
+    blackjack_wait->setText(
+                        "<font size=18>"
+                        "You're done!"
+                        "</font><br/>"
+                        "<font size=16>"
+                        "Please wait until your rival is done.  <strong>Be patient!</strong>"
+                        "</font>"
+                );
 }
 void MainWindow::initializeBlackjackDialogs(){
     this->blackjack_result_dialog = new BlackjackResultDialog(this);
+}
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    qDebug() << "Leaving the game";
+    request.system( System::Request_Operation_QuitGame,  [=](Model::Reply* reply){
+        qDebug() << "Left the game";
+        event->accept();
+    });
+}
+void MainWindow::handleBlackJackPlayerDie(){
+    increaseMoney( Config::GuessNumBet );
+    guess_num_client->reject();
+
+    QMessageBox mesg;
+    mesg.setText("<font size=18>Your rival has exited the room.  Don't worry, we will give your money back.</font>");
+    mesg.exec();
+}
+void MainWindow::handleGuessNumPlayerDie(){
+    increaseMoney( Config::BlackjackBet );
+    blackjack_client->reject();
+
+    QMessageBox mesg;
+    mesg.setText("<font size=18>Your rival has exited the room.  Don't worry, we will give your money back.</font>");
+    mesg.exec();
 }
 
 void MainWindow::joinGame(System::Type type){
@@ -145,20 +186,21 @@ void MainWindow::waitForRival(System::Type type){
     else {
         qDebug() << "Cancel waiting\n";
 
+        timer->stop();
+
         this->keepAlive->start();
 
-        request.system( System::Request_Operation_QuitRoom,  [this](Model::Reply* reply){
+        request.system( System::Request_Operation_QuitWaitRoom,  [this](Model::Reply* reply){
             qDebug() << "Room cleaned up";
         });
     }
+
+    delete timer;
 }
 void MainWindow::checkReady(){
     qDebug() << "Checking if room is ready\n";
-
     request.system( System::Request_Operation_CheckReady, [this](Model::Reply* reply){
-
         if( reply->status() ){
-            qDebug() << "Reply: Room is ready\n";
             waitDialog->done(QDialog::Accepted);
         }
         else{
@@ -221,9 +263,16 @@ void MainWindow::tryConnect(){
 
     // If there has been any connection, close it first
     if( this->socket > 0 ){
-        request.system(System::Request_Operation_QuitGame, [this](Model::Reply* reply){
-            makeConnection();
-        });
+        qDebug() << "Make the connection again";
+        this->keepAlive->stop();
+        request.system(System::Request_Operation_QuitGame, [this](Model::Reply* reply){});
+
+        QThread::sleep(1);
+
+        this->socket = -1;
+        makeConnection();
+        qDebug() << "Quit the game";
+
     }
     else{
         this->makeConnection();
