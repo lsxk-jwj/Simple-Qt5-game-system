@@ -1,5 +1,5 @@
 *.swp
-model
+model/build
 build
 spec.pdf
 lib/protobuf*

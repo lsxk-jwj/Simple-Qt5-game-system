@@ -1,0 +1,41 @@
+package BlackJack;
+
+enum Command {
+    HIT = 1;
+    STAND = 2;
+    SPLIT = 3;
+    DEAL = 4;
+    CHECK_DEALER = 5;
+    UPDATE = 6;
+    FINISH = 7;
+    GET_RIVAL_DECK = 8;
+    GET_DEALER_DECK = 9;
+}
+message RoomMeta {
+    // Dealer cards
+    repeated int32 cards = 1;
+}
+
+message Meta {
+    // Player cards
+    repeated int32 cards1 = 1;
+    repeated int32 cards2 = 2;
+    optional bool cards2_the_best = 3;
+} 
+
+message Request {
+    required Command command = 1;
+    optional bool flag = 2;  
+    /*
+        optional bool acted_on_deck2 = 3;  // The specified command is acted upon deck 2
+        optional bool deck2_the_best = 4;  // The client determine if his best deck is deck 2
+    */
+}
+
+message Reply {
+    optional int32 card1 = 1;
+    optional int32 card2 = 2;
+    optional int32 count = 3;
+    repeated int32 cards = 4;
+    optional bool dead = 5;
+}

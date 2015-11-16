@@ -1,0 +1,26 @@
+package GuessNum;
+
+enum Command {
+    SUBMIT = 1; 
+}
+
+message RoomMeta {
+    repeated int32 answers = 1;
+}
+
+message Meta {
+    optional int32 round = 1;
+} 
+
+message Guesses {
+    repeated int32 guesses = 1;
+}
+message Request {
+    required Command command = 1;
+    optional Guesses submission = 2;
+}
+
+message Reply {
+    optional int32 result_a = 1;
+    optional int32 result_b = 2;
+}

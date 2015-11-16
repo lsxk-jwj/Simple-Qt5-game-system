@@ -1,0 +1,32 @@
+
+import "jack.model.proto";
+import "system.model.proto";
+import "guess.model.proto";
+
+package Model;
+
+
+message Request {
+
+    oneof request {
+        GuessNum.Request guess_num = 1;
+        BlackJack.Request blackjack = 2;
+        System.Request system = 3;
+    }
+}
+
+
+message Reply {
+
+    oneof reply {
+
+        GuessNum.Reply guess_num = 1;
+        BlackJack.Reply blackjack = 2;
+        System.Reply system = 3;
+
+    }
+
+    required bool status = 4;
+}
+
+

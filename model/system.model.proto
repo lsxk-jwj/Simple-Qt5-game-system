@@ -1,0 +1,68 @@
+import  "guess.model.proto";
+import  "jack.model.proto";
+
+package System;
+
+enum Type {
+    JACK = 1;
+    GUESSNUM = 2;
+    NONE = 3;
+}
+
+message RoomMeta {
+    
+    oneof meta {
+        BlackJack.RoomMeta blackjack = 1;
+        GuessNum.RoomMeta guess_num = 2;
+    }
+
+}
+
+message Meta {
+    oneof game_meta {
+        GuessNum.Meta guess_num = 1;
+        BlackJack.Meta blackjack = 2;
+    }
+}
+message User {
+    
+    optional int32 id = 1;
+    optional string name = 2;
+    optional int32 money = 3;
+    optional int32 room_id = 4;
+    optional Meta meta = 5;
+    optional Type game_type = 6;
+    optional bool dead = 7;
+}
+
+message PlayerList {
+    repeated User player = 1;
+}
+
+message Request {
+
+    enum Operation {
+        JoinGame = 0;
+        NewUser = 1;
+        CheckReady = 2;
+        QuitGame = 3;
+        KeepAlive = 4;
+        QuitRoom = 5;
+        RivalName = 6;
+        RivalMeta = 7;
+        CheckFinish = 8;
+        QuitWaitRoom = 9;
+        
+    }
+
+    required Operation operation = 1;
+    optional Type game_type = 2;
+    optional string name = 3;
+
+}
+
+message Reply {
+    optional User user = 1;
+}
+
+
