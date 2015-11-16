@@ -3,7 +3,7 @@ PWD := $(shell pwd)
 CXX := g++
 LINKER := g++
 INCDIRS := -I. -I$(PWD)/lib -I$(PWD)/lib/protobuf-2.6.1/src 
-LIBDIRS := $(PWD)/lib/protobuf-2.6.1/src/.libs 
+LIBDIRS := -L $(PWD)/lib/protobuf-2.6.1/src/.libs -L /usr/local/lib
 LIBS := -l protobuf -l pthread
 CXXFLAGS := -std=c++11 -pthread -DDEBUG_$(shell echo $(debug) | tr a-z A-Z ) 
 BUILD_DIR=build
@@ -62,7 +62,7 @@ model: $(addprefix, $(MODEL_DIR)/, $(MODELS))
 	for modelcc in $(MODELS_SRCFILES); do echo compiling $$modelcc; $(CXX) $(CXXFLAGS) $(INCDIRS) -c $$modelcc ; done
 
 $(SERVER_BUILD): $(LIB_OBJFILES) $(MODELS_OBJFILES) $(SERVER_OBJFILES) 
-	$(LINKER) $^ -o $@ -L $(LIBDIRS) $(LIBS) 
+	$(LINKER) $^ -o $@ $(LIBDIRS) $(LIBS) 
 
 
 $(BIN)/$(SERVER_DIR)/%.o: $(SERVER_DIR)/%.cpp
