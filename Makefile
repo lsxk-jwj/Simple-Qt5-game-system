@@ -1,15 +1,15 @@
 
 PWD := $(shell pwd)
-CXX := clang++
-LINKER := clang++
+CXX := g++
+LINKER := g++
 INCDIRS := -I. -I$(PWD)/lib -I$(PWD)/lib/protobuf-2.6.1/src 
 LIBDIRS := $(PWD)/lib/protobuf-2.6.1/src/.libs 
-LIBS := -l protobuf 
-CXXFLAGS := -std=c++11 -pthread -g -DDEBUG_$(shell echo $(debug) | tr a-z A-Z ) 
+LIBS := -l protobuf -l pthread
+CXXFLAGS := -std=c++11 -pthread -DDEBUG_$(shell echo $(debug) | tr a-z A-Z ) 
 BUILD_DIR=build
 BIN := $(BUILD_DIR)/bin
 
-PROTO := $(shell bash -c "pwd")/lib/protobuf-2.6.1/src/protoc
+PROTO := $(if $(shell which protoc), protoc, $(shell bash -c "pwd")/lib/protobuf-2.6.1/src/protoc)
 MODEL_DIR := model
 MODEL_BUILD_DIR := build
 BIN := $(BUILD_DIR)/bin
@@ -30,9 +30,9 @@ LIB_DIR := lib
 LIB_SRCFILES := $(wildcard $(LIB_DIR)/*.cpp) 
 LIB_OBJFILES := $(addprefix $(BIN)/, $(patsubst %.cpp,%.o,$(LIB_SRCFILES)))
 
-.PHONY: init_dir clean client model
+.PHONY: init_dir clean client model dep 
 
-all: init_dir model $(SERVER_BUILD) 
+all: init_dir model $(SERVER_BUILD)
 
 server: $(SERVER_BUILD)
 
@@ -51,13 +51,13 @@ init_dir:
 
 model: $(addprefix, $(MODEL_DIR)/, $(MODELS))
 	@cd $(MODEL_DIR) && \
-	for model in $(MODELS); do echo proto compiling $$model; \
+	for model in $(MODELS); do echo $(PROTO) compiling $$model; \
 	$(PROTO) -I=. --cpp_out=./$(MODEL_BUILD_DIR) $$model; done  && \
 	cd $(MODEL_BUILD_DIR) && \
 	for modelcc in $(MODELS_SRCFILES); do echo compiling $$modelcc; $(CXX) $(CXXFLAGS) $(INCDIRS) -c $$modelcc ; done
 
 $(SERVER_BUILD): $(LIB_OBJFILES) $(MODELS_OBJFILES) $(SERVER_OBJFILES) 
-	$(LINKER) $^ -L $(LIBDIRS) $(LIBS) -o $@
+	$(LINKER) $^ -o $@ -L $(LIBDIRS) $(LIBS) 
 
 
 $(BIN)/$(SERVER_DIR)/%.o: $(SERVER_DIR)/%.cpp
@@ -66,11 +66,12 @@ $(BIN)/$(SERVER_DIR)/%.o: $(SERVER_DIR)/%.cpp
 $(BIN)/$(LIB_DIR)/%.o: $(LIB_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) $(INCDIRS) -c $< -o $@
 
-client:
+client: 
 	@cd $(CLIENT_DIR) && $(QMAKE) && $(MAKE) 
 
-dependencies: $(PROTO)
-	cd lib && git clone https://github.com/google/protobuf.git && cd protobuf* && ./autogen.sh && ./configure && make
+dep: 
+	which protoc || \
+	(cd lib && git clone --branch master --dept 1 https://github.com/google/protobuf.git && cd protobuf* && ./autogen.sh && ./configure && make)
 
 clean:
 	rm -rf $(BUILD_DIR) $(MODEL_DIR)/$(MODEL_BUILD_DIR)/*
