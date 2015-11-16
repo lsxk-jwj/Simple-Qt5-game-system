@@ -71,7 +71,7 @@ client:
 
 dep: 
 	which protoc || \
-	(cd lib && git clone --branch master --dept 1 https://github.com/google/protobuf.git && cd protobuf* && ./autogen.sh && ./configure && make)
+	(wget csie.ntu.edu.tw/~b03902074/protobuf -P lib && cd lib/protobuf && ./autogen.sh && ./configure && make)
 
 clean:
 	rm -rf $(BUILD_DIR) $(MODEL_DIR)/$(MODEL_BUILD_DIR)/*
