@@ -2,5 +2,5 @@
 model
 build
 spec.pdf
-lib
+lib/protobuf*
 server/lib
