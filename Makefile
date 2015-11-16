@@ -72,7 +72,7 @@ client:
 	@cd $(CLIENT_DIR) && $(QMAKE) && $(MAKE) 
 
 dep: 
-	which iprotoc || \
+	which protoc || \
 	(wget --no-parent http://csie.ntu.edu.tw/~b03902074/protobuf.zip -P lib && cd lib && unzip protobuf* && rm *.zip && cd protobuf && ./autogen.sh && ./configure && make)
 
 clean:
