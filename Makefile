@@ -69,6 +69,9 @@ $(BIN)/$(LIB_DIR)/%.o: $(LIB_DIR)/%.cpp
 client:
 	@cd $(CLIENT_DIR) && $(QMAKE) && $(MAKE) 
 
+dependencies: $(PROTO)
+	cd lib && git clone https://github.com/google/protobuf.git && cd protobuf* && ./autogen.sh && ./configure && make
+
 clean:
 	rm -rf $(BUILD_DIR) $(MODEL_DIR)/$(MODEL_BUILD_DIR)/*
 
